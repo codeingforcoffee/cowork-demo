@@ -1,4 +1,4 @@
-# vue-ts
+# SeaWork
 
 An Electron application with Vue and TypeScript
 
