@@ -19,8 +19,14 @@ import {
   executeWebSearch,
   executeSystemInfo,
   BUILTIN_MCPS,
-  type McpData
+  type McpData,
+  type McpServer
 } from './mcp-service'
+import {
+  connectMcpServer,
+  callMcpTool,
+  type McpConnection
+} from './mcp-client'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -59,9 +65,19 @@ function createWindow(): void {
 
 // 只有需要"动态查询"的工具才走 tool calling（如 web_search）
 // 系统信息是确定性读取，改为上下文注入，不依赖模型自主决策
-function buildToolDefinitions(enabledMcpIds: string[]): ToolDefinition[] {
+async function buildToolDefinitions(
+  enabledMcpIds: string[],
+  userServers: McpServer[]
+): Promise<{
+  tools: ToolDefinition[]
+  mcpConnections: McpConnection[]
+  toolToMcp: Map<string, McpConnection>
+}> {
   const tools: ToolDefinition[] = []
+  const mcpConnections: McpConnection[] = []
+  const toolToMcp = new Map<string, McpConnection>()
 
+  // 内置工具
   if (enabledMcpIds.includes('builtin-web-search')) {
     tools.push({
       type: 'function',
@@ -83,9 +99,27 @@ function buildToolDefinitions(enabledMcpIds: string[]): ToolDefinition[] {
     })
   }
 
-  // TODO: Add external MCP tools based on user-configured servers
+  // 用户自定义 MCP 服务器
+  for (const id of enabledMcpIds) {
+    if (id.startsWith('builtin-')) continue
+    const server = userServers.find(s => s.id === id)
+    if (!server) continue
 
-  return tools
+    const conn = await connectMcpServer(server)
+    if (!conn) continue
+
+    mcpConnections.push(conn)
+    for (const t of conn.tools) {
+      const def: ToolDefinition = {
+        type: 'function',
+        function: t.function
+      }
+      tools.push(def)
+      toolToMcp.set(t.function.name, conn)
+    }
+  }
+
+  return { tools, mcpConnections, toolToMcp }
 }
 
 // 将实时系统信息直接注入 system message，不依赖模型是否决定调用工具
@@ -105,15 +139,21 @@ function injectSystemInfoIfEnabled(
   console.log('[system-info] Injected system snapshot into system message')
 }
 
-const toolExecutor: ToolExecutor = async (name, args) => {
-  if (name === 'web_search') {
-    const query = args['query'] as string
-    return await executeWebSearch(query)
+function createToolExecutor(toolToMcp: Map<string, McpConnection>): ToolExecutor {
+  return async (name, args) => {
+    if (name === 'web_search') {
+      const query = args['query'] as string
+      return await executeWebSearch(query)
+    }
+    if (name === 'get_system_info') {
+      return executeSystemInfo()
+    }
+    const mcpConn = toolToMcp.get(name)
+    if (mcpConn) {
+      return await callMcpTool(mcpConn, name, args)
+    }
+    return `Unknown tool: ${name}`
   }
-  if (name === 'get_system_info') {
-    return executeSystemInfo()
-  }
-  return `Unknown tool: ${name}`
 }
 
 function registerIpcHandlers(): void {
@@ -189,13 +229,28 @@ function registerIpcHandlers(): void {
       // system-info：直接把快照注入 system message（确定性，不依赖模型决策）
       injectSystemInfoIfEnabled(enabledMcpIds, messages)
 
-      // web_search 等动态工具：走 tool calling
-      const tools = buildToolDefinitions(enabledMcpIds)
+      // web_search 等动态工具：走 tool calling（含内置 + 用户 MCP）
+      const { userServers } = loadMcpConfig()
+      const { tools, mcpConnections, toolToMcp } = await buildToolDefinitions(
+        enabledMcpIds,
+        userServers
+      )
+      const toolExecutor = createToolExecutor(toolToMcp)
 
       console.log('[llm:chat] enabledMcpIds:', enabledMcpIds)
       console.log('[llm:chat] tool-calling tools:', tools.map(t => t.function.name))
 
-      await streamChat(settings.llm, messages, mainWindow, tools, toolExecutor)
+      try {
+        await streamChat(settings.llm, messages, mainWindow, tools, toolExecutor)
+      } finally {
+        for (const conn of mcpConnections) {
+          try {
+            await conn.client.close()
+          } catch (e) {
+            console.warn('[llm:chat] MCP close error:', conn.serverId, e)
+          }
+        }
+      }
     }
   )
   ipcMain.handle('llm:abort', () => {

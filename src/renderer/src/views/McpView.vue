@@ -1,75 +1,46 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref } from 'vue'
 import { useMcpStore, type McpServer } from '../stores/mcp'
 import ThemeSwitch from '../components/ThemeSwitch.vue'
+import AddMcpModal from '../components/AddMcpModal.vue'
 
 const mcpStore = useMcpStore()
 
-const showAddForm = ref(false)
-const editingId = ref<string | null>(null)
-
-const emptyForm = (): Omit<McpServer, 'id'> => ({
-  name: '',
-  description: '',
-  type: 'stdio',
-  command: '',
-  args: [],
-  url: ''
-})
-
-const form = reactive<Omit<McpServer, 'id'>>(emptyForm())
-const argsInput = ref('')
+const modalOpen = ref(false)
+const editingServer = ref<McpServer | null>(null)
+const busy = ref(false)
 
 function openAddForm(): void {
-  Object.assign(form, emptyForm())
-  argsInput.value = ''
-  editingId.value = null
-  showAddForm.value = true
+  editingServer.value = null
+  modalOpen.value = true
 }
 
 function openEditForm(server: McpServer): void {
-  Object.assign(form, {
-    name: server.name,
-    description: server.description,
-    type: server.type,
-    command: server.command || '',
-    args: server.args || [],
-    url: server.url || ''
-  })
-  argsInput.value = (server.args || []).join(' ')
-  editingId.value = server.id
-  showAddForm.value = true
+  editingServer.value = server
+  modalOpen.value = true
 }
 
-function cancelForm(): void {
-  showAddForm.value = false
-  editingId.value = null
+function closeModal(): void {
+  modalOpen.value = false
+  editingServer.value = null
 }
 
-async function submitForm(): Promise<void> {
-  if (!form.name.trim()) return
-
-  const args = argsInput.value.trim()
-    ? argsInput.value.trim().split(/\s+/)
-    : []
-
-  const serverData: Omit<McpServer, 'id'> = {
-    name: form.name.trim(),
-    description: form.description.trim(),
-    type: form.type,
-    command: form.command?.trim() || undefined,
-    args,
-    url: form.url?.trim() || undefined
+async function handleAdd(entry: Omit<McpServer, 'id'>): Promise<void> {
+  busy.value = true
+  try {
+    await mcpStore.addUserServer(entry)
+  } finally {
+    busy.value = false
   }
+}
 
-  if (editingId.value) {
-    await mcpStore.updateUserServer(editingId.value, serverData)
-  } else {
-    await mcpStore.addUserServer(serverData)
+async function handleUpdate(id: string, updates: Partial<McpServer>): Promise<void> {
+  busy.value = true
+  try {
+    await mcpStore.updateUserServer(id, updates)
+  } finally {
+    busy.value = false
   }
-
-  showAddForm.value = false
-  editingId.value = null
 }
 
 async function removeServer(id: string): Promise<void> {
@@ -100,92 +71,16 @@ function openMcpDocs(): void {
       </div>
     </header>
 
+    <AddMcpModal
+      :open="modalOpen"
+      :editing-server="editingServer"
+      :busy="busy"
+      @close="closeModal"
+      @add="handleAdd"
+      @update="handleUpdate"
+    />
+
     <div class="flex-1 overflow-y-auto p-6">
-
-      <!-- Add/Edit form -->
-      <div v-if="showAddForm" class="mb-6 rounded-xl border border-border bg-bg-secondary p-5">
-        <h2 class="text-sm font-semibold text-text-primary mb-4">
-          {{ editingId ? 'Edit MCP Server' : 'Add MCP Server' }}
-        </h2>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-medium text-text-secondary mb-1">Name *</label>
-            <input
-              v-model="form.name"
-              type="text"
-              placeholder="My MCP Server"
-              class="w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary outline-none focus:ring-2 focus:ring-accent"
-            />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-text-secondary mb-1">Type</label>
-            <select
-              v-model="form.type"
-              class="w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary outline-none focus:ring-2 focus:ring-accent"
-            >
-              <option value="stdio">stdio (Command)</option>
-              <option value="sse">SSE (HTTP)</option>
-            </select>
-          </div>
-          <div class="col-span-2">
-            <label class="block text-xs font-medium text-text-secondary mb-1">Description</label>
-            <input
-              v-model="form.description"
-              type="text"
-              placeholder="What does this MCP do?"
-              class="w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary outline-none focus:ring-2 focus:ring-accent"
-            />
-          </div>
-          <template v-if="form.type === 'stdio'">
-            <div>
-              <label class="block text-xs font-medium text-text-secondary mb-1">Command</label>
-              <input
-                v-model="form.command"
-                type="text"
-                placeholder="npx, node, python3, ..."
-                class="w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary outline-none focus:ring-2 focus:ring-accent"
-              />
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-text-secondary mb-1">Arguments (space-separated)</label>
-              <input
-                v-model="argsInput"
-                type="text"
-                placeholder="-y @modelcontextprotocol/server-filesystem /path"
-                class="w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary outline-none focus:ring-2 focus:ring-accent"
-              />
-            </div>
-          </template>
-          <template v-else>
-            <div class="col-span-2">
-              <label class="block text-xs font-medium text-text-secondary mb-1">Server URL</label>
-              <input
-                v-model="form.url"
-                type="text"
-                placeholder="http://localhost:3000/sse"
-                class="w-full rounded-lg border border-border bg-bg-primary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary outline-none focus:ring-2 focus:ring-accent"
-              />
-            </div>
-          </template>
-        </div>
-
-        <div class="flex gap-2 mt-4">
-          <button
-            class="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover transition-colors disabled:opacity-50"
-            :disabled="!form.name.trim()"
-            @click="submitForm"
-          >
-            {{ editingId ? 'Save Changes' : 'Add Server' }}
-          </button>
-          <button
-            class="rounded-lg border border-border px-4 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
-            @click="cancelForm"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
 
       <!-- Built-in MCPs -->
       <section class="mb-6">

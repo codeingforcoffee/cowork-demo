@@ -60,6 +60,12 @@ export async function streamChat(
   return doStreamChat(config, messages, window)
 }
 
+interface StreamToolCallAccumulator {
+  id: string
+  type: 'function'
+  function: { name: string; arguments: string }
+}
+
 async function streamChatWithTools(
   config: LLMConfig,
   messages: ChatMessage[],
@@ -68,7 +74,16 @@ async function streamChatWithTools(
   window: BrowserWindow
 ): Promise<void> {
   const url = `${config.baseUrl.replace(/\/+$/, '')}/chat/completions`
-  abortController = new AbortController()
+  if (!abortController) {
+    abortController = new AbortController()
+  }
+
+  const cleanMessages = messages.map(m => ({
+    role: m.role,
+    content: m.content,
+    ...(m.tool_call_id ? { tool_call_id: m.tool_call_id } : {}),
+    ...(m.tool_calls ? { tool_calls: m.tool_calls } : {})
+  }))
 
   let res: Response
   try {
@@ -80,10 +95,10 @@ async function streamChatWithTools(
       },
       body: JSON.stringify({
         model: config.model,
-        messages,
+        messages: cleanMessages,
         tools,
         tool_choice: 'auto',
-        stream: false
+        stream: true
       }),
       signal: abortController.signal
     })
@@ -105,78 +120,157 @@ async function streamChatWithTools(
     return
   }
 
-  const data = (await res.json()) as {
-    choices: {
-      message: {
-        role: string
-        content: string | null
-        tool_calls?: ToolCall[]
-      }
-      finish_reason: string
-    }[]
+  const reader = res.body?.getReader()
+  if (!reader) {
+    window.webContents.send('llm:error', 'No response body')
+    abortController = null
+    return
   }
 
-  const choice = data.choices[0]
+  const decoder = new TextDecoder()
+  let buffer = ''
+  const toolCallsAccum: Map<number, StreamToolCallAccumulator> = new Map()
+  let delegatedToDoStream = false
 
-  console.log('[llm] finish_reason:', choice?.finish_reason)
-  console.log('[llm] has tool_calls:', !!(choice?.message?.tool_calls?.length))
-  if (choice?.message?.content) {
-    console.log('[llm] content preview:', choice.message.content.slice(0, 120))
-  }
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
 
-  if (choice.finish_reason === 'tool_calls' && choice.message.tool_calls) {
-    const toolCalls = choice.message.tool_calls
-    const currentMessages: ChatMessage[] = [
-      ...messages,
-      choice.message as ChatMessage
-    ]
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
 
-    for (const toolCall of toolCalls) {
-      try {
-        const args = JSON.parse(toolCall.function.arguments) as Record<string, unknown>
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed || !trimmed.startsWith('data:')) continue
+        const data = trimmed.slice(5).trim()
+        if (data === '[DONE]') {
+          window.webContents.send('llm:done')
+          abortController = null
+          return
+        }
 
-        window.webContents.send('llm:tool-call', {
-          id: toolCall.id,
-          name: toolCall.function.name,
-          args
-        })
+        try {
+          const parsed = JSON.parse(data) as {
+            choices: {
+              delta: {
+                content?: string
+                tool_calls?: Array<{
+                  index: number
+                  id?: string
+                  function?: { name?: string; arguments?: string }
+                }>
+              }
+              finish_reason?: string
+            }[]
+          }
+          const choice = parsed.choices?.[0]
+          if (!choice) continue
 
-        const result = await toolExecutor(toolCall.function.name, args)
+          const { delta, finish_reason } = choice
 
-        window.webContents.send('llm:tool-result', {
-          id: toolCall.id,
-          name: toolCall.function.name,
-          result
-        })
+          if (delta?.content) {
+            window.webContents.send('llm:chunk', delta.content)
+          }
 
-        currentMessages.push({
-          role: 'tool',
-          content: result,
-          tool_call_id: toolCall.id
-        })
-      } catch (err) {
-        const errMsg = `Tool execution error: ${String(err)}`
-        window.webContents.send('llm:tool-result', {
-          id: toolCall.id,
-          name: toolCall.function.name,
-          result: errMsg
-        })
-        currentMessages.push({
-          role: 'tool',
-          content: errMsg,
-          tool_call_id: toolCall.id
-        })
+          if (delta?.tool_calls) {
+            for (const tc of delta.tool_calls) {
+              const idx = tc.index
+              let acc = toolCallsAccum.get(idx)
+              if (!acc) {
+                acc = {
+                  id: tc.id || `call_${idx}`,
+                  type: 'function',
+                  function: { name: '', arguments: '' }
+                }
+                toolCallsAccum.set(idx, acc)
+              }
+              if (tc.id) acc.id = tc.id
+              if (tc.function?.name) acc.function.name += tc.function.name
+              if (tc.function?.arguments) acc.function.arguments += tc.function.arguments
+            }
+          }
+
+          if (finish_reason === 'tool_calls' && toolCallsAccum.size > 0) {
+            const toolCalls: ToolCall[] = Array.from(toolCallsAccum.entries())
+              .sort(([a], [b]) => a - b)
+              .map(([, acc]) => ({
+                id: acc.id,
+                type: 'function' as const,
+                function: { name: acc.function.name, arguments: acc.function.arguments }
+              }))
+
+            const assistantMsg: ChatMessage = {
+              role: 'assistant',
+              content: null,
+              tool_calls: toolCalls
+            }
+            const currentMessages: ChatMessage[] = [...messages, assistantMsg]
+
+            for (const toolCall of toolCalls) {
+              try {
+                const args = JSON.parse(toolCall.function.arguments) as Record<string, unknown>
+
+                window.webContents.send('llm:tool-call', {
+                  id: toolCall.id,
+                  name: toolCall.function.name,
+                  args
+                })
+
+                const result = await toolExecutor(toolCall.function.name, args)
+
+                window.webContents.send('llm:tool-result', {
+                  id: toolCall.id,
+                  name: toolCall.function.name,
+                  result
+                })
+
+                currentMessages.push({
+                  role: 'tool',
+                  content: result,
+                  tool_call_id: toolCall.id
+                })
+              } catch (err) {
+                const errMsg = `Tool execution error: ${String(err)}`
+                window.webContents.send('llm:tool-result', {
+                  id: toolCall.id,
+                  name: toolCall.function.name,
+                  result: errMsg
+                })
+                currentMessages.push({
+                  role: 'tool',
+                  content: errMsg,
+                  tool_call_id: toolCall.id
+                })
+              }
+            }
+
+            delegatedToDoStream = true
+            return doStreamChat(config, currentMessages, window)
+          }
+
+          if (finish_reason === 'stop' || finish_reason === 'length') {
+            window.webContents.send('llm:done')
+            abortController = null
+            return
+          }
+        } catch {
+          // skip malformed JSON chunks
+        }
       }
-    }
-
-    return doStreamChat(config, currentMessages, window)
-  } else {
-    const content = choice.message.content || ''
-    if (content) {
-      window.webContents.send('llm:chunk', content)
     }
     window.webContents.send('llm:done')
-    abortController = null
+  } catch (err: unknown) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      window.webContents.send('llm:done')
+    } else {
+      window.webContents.send('llm:error', String(err))
+    }
+  } finally {
+    if (!delegatedToDoStream) {
+      abortController = null
+    }
   }
 }
 
