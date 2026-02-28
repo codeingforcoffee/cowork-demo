@@ -1,12 +1,14 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useThemeStore, type ThemeMode } from '../stores/theme'
 
+const { t } = useI18n()
 const themeStore = useThemeStore()
 
-const options: { value: ThemeMode; label: string }[] = [
-  { value: 'light', label: '☀️ Light' },
-  { value: 'dark', label: '🌙 Dark' },
-  { value: 'system', label: '💻 System' }
+const options: { value: ThemeMode; labelKey: string }[] = [
+  { value: 'light', labelKey: 'theme.light' },
+  { value: 'dark', labelKey: 'theme.dark' },
+  { value: 'system', labelKey: 'theme.system' }
 ]
 </script>
 
@@ -23,7 +25,7 @@ const options: { value: ThemeMode; label: string }[] = [
       "
       @click="themeStore.setMode(opt.value)"
     >
-      {{ opt.label }}
+      {{ t(opt.labelKey) }}
     </button>
   </div>
 </template>

@@ -1,0 +1,88 @@
+{
+  "common": {
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "rename": "Rename",
+    "newChat": "New Chat",
+    "expandSidebar": "Expand sidebar",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "thisWeek": "This Week",
+    "older": "Older",
+    "collapseSidebar": "Collapse sidebar"
+  },
+  "nav": {
+    "mcp": "MCP",
+    "settings": "Settings",
+    "about": "About"
+  },
+  "theme": {
+    "title": "Theme",
+    "description": "Select your preferred color scheme.",
+    "light": "☀️ Light",
+    "dark": "🌙 Dark",
+    "system": "💻 System"
+  },
+  "language": {
+    "title": "Language",
+    "description": "Display language for the application.",
+    "en": "English",
+    "zhCN": "简体中文"
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Configure your application preferences.",
+    "llmApi": "LLM API",
+    "llmApiDesc": "Supports OpenAI-compatible APIs (OpenAI, Claude, Ollama, etc.). API Key is stored locally only.",
+    "baseUrl": "Base URL",
+    "baseUrlPlaceholder": "https://api.openai.com/v1",
+    "baseUrlHint": "Examples: OpenAI https://api.openai.com/v1, Ollama http://localhost:11434/v1",
+    "apiKey": "API Key",
+    "apiKeyPlaceholder": "sk-...",
+    "apiKeyHint": "Leave empty for local models like Ollama",
+    "model": "Model",
+    "modelPlaceholder": "gpt-4o-mini",
+    "modelHint": "Examples: gpt-4o-mini, gpt-4o, claude-3-5-sonnet, llama3.2, etc.",
+    "appearance": "Appearance",
+    "general": "General"
+  },
+  "home": {
+    "title": "Welcome to Corwork",
+    "subtitle": "An Electron desktop app built with Vue 3, Vite, and TypeScript.",
+    "electronVite": "Electron + Vite",
+    "electronViteDesc": "Fast HMR development with electron-vite. Main process hot-reload included.",
+    "vueTs": "Vue 3 + TypeScript",
+    "vueTsDesc": "Composition API, script setup, and full type safety out of the box.",
+    "tailwind": "Tailwind CSS v4",
+    "tailwindDesc": "Utility-first CSS with dark mode support via custom theme tokens.",
+    "secureIpc": "Secure IPC",
+    "secureIpcDesc": "Context-isolated preload bridge for safe main-renderer communication."
+  },
+  "about": {
+    "title": "About",
+    "application": "Application",
+    "appName": "Corwork Demo",
+    "version": "Version",
+    "system": "System (via IPC)",
+    "platform": "Platform",
+    "arch": "Architecture",
+    "nodeVersion": "Node Version",
+    "links": "Links",
+    "documentation": "Documentation"
+  },
+  "mcp": {
+    "title": "MCP Management",
+    "addServer": "Add Server",
+    "noServers": "No MCP servers configured.",
+    "addFirst": "Add your first server to get started."
+  },
+  "chat": {
+    "placeholder": "Send a message...",
+    "send": "Send",
+    "copy": "Copy",
+    "copied": "Copied"
+  }
+}

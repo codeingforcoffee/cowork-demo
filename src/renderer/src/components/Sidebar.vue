@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter, useRoute } from 'vue-router'
 import { useSessionsStore } from '../stores/sessions'
 
+const { t } = useI18n()
 defineProps<{ collapsed: boolean }>()
 const emit = defineEmits<{ (e: 'toggle'): void }>()
 
@@ -14,9 +16,9 @@ const editingId = ref<string | null>(null)
 const editingTitle = ref('')
 
 const bottomNav = [
-  { path: '/mcp', label: 'MCP', icon: '🔌' },
-  { path: '/settings', label: 'Settings', icon: '⚙️' },
-  { path: '/about', label: 'About', icon: 'ℹ️' }
+  { path: '/mcp', labelKey: 'nav.mcp', icon: '🔌' },
+  { path: '/settings', labelKey: 'nav.settings', icon: '⚙️' },
+  { path: '/about', labelKey: 'nav.about', icon: 'ℹ️' }
 ]
 
 function handleNewSession(): void {
@@ -63,7 +65,7 @@ function cancelEdit(): void {
       <button
         class="no-drag shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
         :class="collapsed ? '' : 'ml-[52px]'"
-        :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        :title="collapsed ? t('common.expandSidebar') : t('common.collapseSidebar')"
         @click="emit('toggle')"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -82,13 +84,13 @@ function cancelEdit(): void {
       <button
         class="w-full flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-colors"
         :class="collapsed ? 'justify-center' : ''"
-        :title="collapsed ? 'New Chat' : ''"
+        :title="collapsed ? t('common.newChat') : ''"
         @click="handleNewSession"
       >
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="shrink-0">
           <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        <span v-if="!collapsed" class="truncate">New Chat</span>
+        <span v-if="!collapsed" class="truncate">{{ t('common.newChat') }}</span>
       </button>
     </div>
 
@@ -96,7 +98,7 @@ function cancelEdit(): void {
     <div class="flex-1 overflow-y-auto overflow-x-hidden px-2 py-1 space-y-0.5 min-h-0">
       <!-- Today -->
       <template v-if="sessionsStore.groupedSessions.today.length > 0">
-        <p v-if="!collapsed" class="px-2 pt-2 pb-1 text-xs text-text-tertiary font-medium">Today</p>
+        <p v-if="!collapsed" class="px-2 pt-2 pb-1 text-xs text-text-tertiary font-medium">{{ t('common.today') }}</p>
         <div v-for="session in sessionsStore.groupedSessions.today" :key="session.id">
           <div
             class="group relative flex items-center gap-2 rounded-lg px-2 py-2 cursor-pointer text-sm transition-colors"
@@ -131,7 +133,7 @@ function cancelEdit(): void {
               <div class="hidden group-hover:flex items-center gap-0.5 shrink-0">
                 <button
                   class="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-primary opacity-60 hover:opacity-100"
-                  title="Rename"
+                  :title="t('common.rename')"
                   @click="startEdit(session.id, session.title, $event)"
                 >
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
@@ -140,7 +142,7 @@ function cancelEdit(): void {
                 </button>
                 <button
                   class="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-primary opacity-60 hover:opacity-100 hover:text-red-400"
-                  title="Delete"
+                  :title="t('common.delete')"
                   @click="handleDeleteSession(session.id, $event)"
                 >
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
@@ -155,7 +157,7 @@ function cancelEdit(): void {
 
       <!-- Yesterday -->
       <template v-if="sessionsStore.groupedSessions.yesterday.length > 0">
-        <p v-if="!collapsed" class="px-2 pt-2 pb-1 text-xs text-text-tertiary font-medium">Yesterday</p>
+        <p v-if="!collapsed" class="px-2 pt-2 pb-1 text-xs text-text-tertiary font-medium">{{ t('common.yesterday') }}</p>
         <div v-for="session in sessionsStore.groupedSessions.yesterday" :key="session.id">
           <div
             class="group relative flex items-center gap-2 rounded-lg px-2 py-2 cursor-pointer text-sm transition-colors"
@@ -177,13 +179,13 @@ function cancelEdit(): void {
               <span class="flex-1 truncate text-xs">{{ session.title }}</span>
               <div class="hidden group-hover:flex items-center gap-0.5 shrink-0">
                 <button class="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-primary opacity-60 hover:opacity-100"
-                  title="Rename" @click="startEdit(session.id, session.title, $event)">
+                  :title="t('common.rename')" @click="startEdit(session.id, session.title, $event)">
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                     <path d="M8.5 1.5L10.5 3.5L4 10H2v-2l6.5-6.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
                   </svg>
                 </button>
                 <button class="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-primary opacity-60 hover:opacity-100 hover:text-red-400"
-                  title="Delete" @click="handleDeleteSession(session.id, $event)">
+                  :title="t('common.delete')" @click="handleDeleteSession(session.id, $event)">
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                     <path d="M2 3h8M5 3V2h2v1M4.5 5v4M7.5 5v4M3 3l.5 7h5L9 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
@@ -196,7 +198,7 @@ function cancelEdit(): void {
 
       <!-- This week -->
       <template v-if="sessionsStore.groupedSessions.thisWeek.length > 0">
-        <p v-if="!collapsed" class="px-2 pt-2 pb-1 text-xs text-text-tertiary font-medium">This Week</p>
+        <p v-if="!collapsed" class="px-2 pt-2 pb-1 text-xs text-text-tertiary font-medium">{{ t('common.thisWeek') }}</p>
         <div v-for="session in sessionsStore.groupedSessions.thisWeek" :key="session.id">
           <div
             class="group relative flex items-center gap-2 rounded-lg px-2 py-2 cursor-pointer text-sm transition-colors"
@@ -218,13 +220,13 @@ function cancelEdit(): void {
               <span class="flex-1 truncate text-xs">{{ session.title }}</span>
               <div class="hidden group-hover:flex items-center gap-0.5 shrink-0">
                 <button class="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-primary opacity-60 hover:opacity-100"
-                  title="Rename" @click="startEdit(session.id, session.title, $event)">
+                  :title="t('common.rename')" @click="startEdit(session.id, session.title, $event)">
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                     <path d="M8.5 1.5L10.5 3.5L4 10H2v-2l6.5-6.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
                   </svg>
                 </button>
                 <button class="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-primary opacity-60 hover:opacity-100 hover:text-red-400"
-                  title="Delete" @click="handleDeleteSession(session.id, $event)">
+                  :title="t('common.delete')" @click="handleDeleteSession(session.id, $event)">
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                     <path d="M2 3h8M5 3V2h2v1M4.5 5v4M7.5 5v4M3 3l.5 7h5L9 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
@@ -237,7 +239,7 @@ function cancelEdit(): void {
 
       <!-- Older -->
       <template v-if="sessionsStore.groupedSessions.older.length > 0">
-        <p v-if="!collapsed" class="px-2 pt-2 pb-1 text-xs text-text-tertiary font-medium">Older</p>
+        <p v-if="!collapsed" class="px-2 pt-2 pb-1 text-xs text-text-tertiary font-medium">{{ t('common.older') }}</p>
         <div v-for="session in sessionsStore.groupedSessions.older" :key="session.id">
           <div
             class="group relative flex items-center gap-2 rounded-lg px-2 py-2 cursor-pointer text-sm transition-colors"
@@ -259,13 +261,13 @@ function cancelEdit(): void {
               <span class="flex-1 truncate text-xs">{{ session.title }}</span>
               <div class="hidden group-hover:flex items-center gap-0.5 shrink-0">
                 <button class="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-primary opacity-60 hover:opacity-100"
-                  title="Rename" @click="startEdit(session.id, session.title, $event)">
+                  :title="t('common.rename')" @click="startEdit(session.id, session.title, $event)">
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                     <path d="M8.5 1.5L10.5 3.5L4 10H2v-2l6.5-6.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
                   </svg>
                 </button>
                 <button class="w-5 h-5 flex items-center justify-center rounded hover:bg-bg-primary opacity-60 hover:opacity-100 hover:text-red-400"
-                  title="Delete" @click="handleDeleteSession(session.id, $event)">
+                  :title="t('common.delete')" @click="handleDeleteSession(session.id, $event)">
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
                     <path d="M2 3h8M5 3V2h2v1M4.5 5v4M7.5 5v4M3 3l.5 7h5L9 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                   </svg>
@@ -290,10 +292,10 @@ function cancelEdit(): void {
             ? 'bg-sidebar-active text-accent font-medium'
             : 'text-text-secondary hover:text-text-primary hover:bg-bg-tertiary'
         ]"
-        :title="collapsed ? item.label : ''"
+        :title="collapsed ? t(item.labelKey) : ''"
       >
         <span class="text-base shrink-0">{{ item.icon }}</span>
-        <span v-if="!collapsed" class="text-xs truncate">{{ item.label }}</span>
+        <span v-if="!collapsed" class="text-xs truncate">{{ t(item.labelKey) }}</span>
       </router-link>
     </div>
   </aside>

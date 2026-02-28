@@ -1,10 +1,17 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import ThemeSwitch from '../components/ThemeSwitch.vue'
 import { useSettingsStore } from '../stores/settings'
+import { setLocale, type Locale } from '../i18n'
 
+const { t, locale } = useI18n()
 const settingsStore = useSettingsStore()
 const saving = ref(false)
+
+function onLocaleChange(newLocale: Locale): void {
+  setLocale(newLocale)
+}
 const saved = ref(false)
 
 onMounted(async () => {
@@ -26,50 +33,49 @@ async function saveLLM(): Promise<void> {
 
 <template>
   <div class="flex-1 p-8 overflow-y-auto">
-    <h1 class="text-3xl font-bold text-text-primary mb-2">Settings</h1>
-    <p class="text-text-secondary mb-8">Configure your application preferences.</p>
+    <h1 class="text-3xl font-bold text-text-primary mb-2">{{ t('settings.title') }}</h1>
+    <p class="text-text-secondary mb-8">{{ t('settings.subtitle') }}</p>
 
     <div class="max-w-2xl space-y-6">
       <section class="rounded-xl border border-border bg-bg-secondary p-6">
-        <h2 class="text-lg font-semibold text-text-primary mb-4">LLM API</h2>
+        <h2 class="text-lg font-semibold text-text-primary mb-4">{{ t('settings.llmApi') }}</h2>
         <p class="text-sm text-text-secondary mb-4">
-          支持 OpenAI 兼容 API（OpenAI、Claude、Ollama、各类中转等）。API Key 仅保存在本地。
+          {{ t('settings.llmApiDesc') }}
         </p>
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-text-primary mb-1">Base URL</label>
+            <label class="block text-sm font-medium text-text-primary mb-1">{{ t('settings.baseUrl') }}</label>
             <input
               v-model="settingsStore.llm.baseUrl"
               type="text"
-              placeholder="https://api.openai.com/v1"
+              :placeholder="t('settings.baseUrlPlaceholder')"
               class="w-full rounded-lg border border-border bg-bg-tertiary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary outline-none focus:ring-2 focus:ring-accent"
             />
             <p class="mt-1 text-xs text-text-tertiary">
-              示例：OpenAI <code>https://api.openai.com/v1</code>，Ollama
-              <code>http://localhost:11434/v1</code>
+              {{ t('settings.baseUrlHint') }}
             </p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-text-primary mb-1">API Key</label>
+            <label class="block text-sm font-medium text-text-primary mb-1">{{ t('settings.apiKey') }}</label>
             <input
               v-model="settingsStore.llm.apiKey"
               type="password"
-              placeholder="sk-..."
+              :placeholder="t('settings.apiKeyPlaceholder')"
               autocomplete="off"
               class="w-full rounded-lg border border-border bg-bg-tertiary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary outline-none focus:ring-2 focus:ring-accent"
             />
-            <p class="mt-1 text-xs text-text-tertiary">Ollama 等本地模型可留空</p>
+            <p class="mt-1 text-xs text-text-tertiary">{{ t('settings.apiKeyHint') }}</p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-text-primary mb-1">Model</label>
+            <label class="block text-sm font-medium text-text-primary mb-1">{{ t('settings.model') }}</label>
             <input
               v-model="settingsStore.llm.model"
               type="text"
-              placeholder="gpt-4o-mini"
+              :placeholder="t('settings.modelPlaceholder')"
               class="w-full rounded-lg border border-border bg-bg-tertiary px-3 py-2 text-sm text-text-primary placeholder-text-tertiary outline-none focus:ring-2 focus:ring-accent"
             />
             <p class="mt-1 text-xs text-text-tertiary">
-              示例：gpt-4o-mini、gpt-4o、claude-3-5-sonnet、llama3.2 等
+              {{ t('settings.modelHint') }}
             </p>
           </div>
           <div class="flex items-center gap-2">
@@ -78,36 +84,38 @@ async function saveLLM(): Promise<void> {
               :disabled="saving"
               @click="saveLLM"
             >
-              {{ saving ? '保存中...' : '保存' }}
+              {{ saving ? t('common.saving') : t('common.save') }}
             </button>
-            <span v-if="saved" class="text-sm text-green-600 dark:text-green-400">已保存</span>
+            <span v-if="saved" class="text-sm text-green-600 dark:text-green-400">{{ t('common.saved') }}</span>
           </div>
         </div>
       </section>
 
       <section class="rounded-xl border border-border bg-bg-secondary p-6">
-        <h2 class="text-lg font-semibold text-text-primary mb-4">Appearance</h2>
+        <h2 class="text-lg font-semibold text-text-primary mb-4">{{ t('settings.appearance') }}</h2>
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-medium text-text-primary">Theme</p>
-            <p class="text-sm text-text-secondary">Select your preferred color scheme.</p>
+            <p class="font-medium text-text-primary">{{ t('theme.title') }}</p>
+            <p class="text-sm text-text-secondary">{{ t('theme.description') }}</p>
           </div>
           <ThemeSwitch />
         </div>
       </section>
 
       <section class="rounded-xl border border-border bg-bg-secondary p-6">
-        <h2 class="text-lg font-semibold text-text-primary mb-4">General</h2>
+        <h2 class="text-lg font-semibold text-text-primary mb-4">{{ t('settings.general') }}</h2>
         <div class="flex items-center justify-between">
           <div>
-            <p class="font-medium text-text-primary">Language</p>
-            <p class="text-sm text-text-secondary">Display language for the application.</p>
+            <p class="font-medium text-text-primary">{{ t('language.title') }}</p>
+            <p class="text-sm text-text-secondary">{{ t('language.description') }}</p>
           </div>
           <select
+            :value="locale"
             class="rounded-lg border border-border bg-bg-tertiary px-3 py-1.5 text-sm text-text-primary outline-none focus:ring-2 focus:ring-accent"
+            @change="onLocaleChange(($event.target as HTMLSelectElement).value as Locale)"
           >
-            <option value="en">English</option>
-            <option value="zh-cn">简体中文</option>
+            <option value="en">{{ t('language.en') }}</option>
+            <option value="zh-CN">{{ t('language.zhCN') }}</option>
           </select>
         </div>
       </section>
