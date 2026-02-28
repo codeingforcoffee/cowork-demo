@@ -9,6 +9,7 @@ import { SETTINGS } from './settings';
 import { SESSIONS } from './sessions';
 import { MCP } from './mcp';
 import { EXPERTS } from './experts';
+import { SKILLS } from './skills';
 import { FILE } from './file';
 import { MAIN_LLM, RENDERER_LLM } from './llm';
 import { SHELL } from './shell';
@@ -20,6 +21,7 @@ export const MAIN = {
   SESSIONS,
   MCP,
   EXPERTS,
+  SKILLS,
   FILE,
   LLM: MAIN_LLM,
   SHELL

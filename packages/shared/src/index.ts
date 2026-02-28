@@ -6,6 +6,7 @@ export { SETTINGS } from './settings';
 export { SESSIONS } from './sessions';
 export { MCP } from './mcp';
 export { EXPERTS } from './experts';
+export { SKILLS } from './skills';
 export { FILE } from './file';
 export { MAIN_LLM, RENDERER_LLM } from './llm';
 export { SHELL } from './shell';

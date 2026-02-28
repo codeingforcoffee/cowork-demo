@@ -84,9 +84,9 @@ function usePreset(cmd: string): void {
         </div>
 
         <div class="rounded-lg border border-border bg-bg-tertiary p-4">
-          <pre
-            class="text-sm text-text-primary whitespace-pre-wrap break-words font-mono"
-          >{{ output || '点击执行或选择快捷命令' }}</pre>
+          <pre class="text-sm text-text-primary whitespace-pre-wrap break-words font-mono">{{
+            output || '点击执行或选择快捷命令'
+          }}</pre>
         </div>
         <p v-if="lastResult" class="mt-2 text-xs text-text-tertiary">
           退出码: {{ lastResult.exitCode }}

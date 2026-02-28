@@ -30,6 +30,10 @@ const api = {
   loadExperts: (): Promise<unknown> => ipcRenderer.invoke(MAIN.EXPERTS.LOAD),
   saveExperts: (data: unknown): Promise<boolean> => ipcRenderer.invoke(MAIN.EXPERTS.SAVE, data),
 
+  // Skills
+  loadSkills: (): Promise<unknown> => ipcRenderer.invoke(MAIN.SKILLS.LOAD),
+  saveSkills: (data: unknown): Promise<boolean> => ipcRenderer.invoke(MAIN.SKILLS.SAVE, data),
+
   // File operations
   pickFile: (): Promise<string | null> => ipcRenderer.invoke(MAIN.FILE.PICK),
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke(MAIN.FILE.PICK_FOLDER),
@@ -43,7 +47,10 @@ const api = {
     ipcRenderer.invoke(MAIN.FILE.WRITE, path, content),
 
   // Shell execution (cross-platform)
-  execShell: (command: string, cwd?: string): Promise<{ stdout: string; stderr: string; exitCode: number; error?: string }> =>
+  execShell: (
+    command: string,
+    cwd?: string
+  ): Promise<{ stdout: string; stderr: string; exitCode: number; error?: string }> =>
     ipcRenderer.invoke(MAIN.SHELL.EXEC, command, cwd),
 
   // LLM (streaming) with tool support

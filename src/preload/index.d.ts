@@ -78,6 +78,19 @@ interface ExpertsData {
   experts: Expert[];
 }
 
+interface Skill {
+  id: string;
+  name: string;
+  description: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface SkillsData {
+  skills: Skill[];
+}
+
 interface ToolCallInfo {
   id: string;
   name: string;
@@ -113,6 +126,10 @@ interface AppAPI {
   // Experts
   loadExperts: () => Promise<ExpertsData>;
   saveExperts: (data: ExpertsData) => Promise<boolean>;
+
+  // Skills
+  loadSkills: () => Promise<SkillsData>;
+  saveSkills: (data: SkillsData) => Promise<boolean>;
 
   // File operations
   pickFile: () => Promise<string | null>;

@@ -30,6 +30,7 @@ import {
   type McpServer
 } from './mcp-service';
 import { loadExperts, saveExperts, type ExpertsData } from './experts-service';
+import { loadSkills, saveSkills, type SkillsData } from './skills-service';
 import { connectMcpServer, callMcpTool, type McpConnection } from './mcp-client';
 import { execShell } from './shell-service';
 
@@ -202,6 +203,13 @@ function registerIpcHandlers(): void {
   ipcMain.handle(MAIN.EXPERTS.LOAD, () => loadExperts());
   ipcMain.handle(MAIN.EXPERTS.SAVE, (_event, data: ExpertsData) => {
     saveExperts(data);
+    return true;
+  });
+
+  // Skills management
+  ipcMain.handle(MAIN.SKILLS.LOAD, () => loadSkills());
+  ipcMain.handle(MAIN.SKILLS.SAVE, (_event, data: SkillsData) => {
+    saveSkills(data);
     return true;
   });
 
