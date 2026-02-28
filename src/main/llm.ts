@@ -1,4 +1,5 @@
 import { BrowserWindow } from 'electron';
+import { RENDERER } from '@cowork/shared';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
@@ -104,25 +105,25 @@ async function streamChatWithTools(
     });
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      window.webContents.send('llm:done');
+      window.webContents.send(RENDERER.LLM.DONE);
       abortController = null;
       return;
     }
-    window.webContents.send('llm:error', String(err));
+    window.webContents.send(RENDERER.LLM.ERROR, String(err));
     abortController = null;
     return;
   }
 
   if (!res.ok) {
     const errorBody = await res.text();
-    window.webContents.send('llm:error', `API Error ${res.status}: ${errorBody}`);
+    window.webContents.send(RENDERER.LLM.ERROR, `API Error ${res.status}: ${errorBody}`);
     abortController = null;
     return;
   }
 
   const reader = res.body?.getReader();
   if (!reader) {
-    window.webContents.send('llm:error', 'No response body');
+    window.webContents.send(RENDERER.LLM.ERROR, 'No response body');
     abortController = null;
     return;
   }
@@ -146,7 +147,7 @@ async function streamChatWithTools(
         if (!trimmed || !trimmed.startsWith('data:')) continue;
         const data = trimmed.slice(5).trim();
         if (data === '[DONE]') {
-          window.webContents.send('llm:done');
+          window.webContents.send(RENDERER.LLM.DONE);
           abortController = null;
           return;
         }
@@ -171,7 +172,7 @@ async function streamChatWithTools(
           const { delta, finish_reason } = choice;
 
           if (delta?.content) {
-            window.webContents.send('llm:chunk', delta.content);
+            window.webContents.send(RENDERER.LLM.CHUNK, delta.content);
           }
 
           if (delta?.tool_calls) {
@@ -212,7 +213,7 @@ async function streamChatWithTools(
               try {
                 const args = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
 
-                window.webContents.send('llm:tool-call', {
+                window.webContents.send(RENDERER.LLM.TOOL_CALL, {
                   id: toolCall.id,
                   name: toolCall.function.name,
                   args
@@ -220,7 +221,7 @@ async function streamChatWithTools(
 
                 const result = await toolExecutor(toolCall.function.name, args);
 
-                window.webContents.send('llm:tool-result', {
+                window.webContents.send(RENDERER.LLM.TOOL_RESULT, {
                   id: toolCall.id,
                   name: toolCall.function.name,
                   result
@@ -233,7 +234,7 @@ async function streamChatWithTools(
                 });
               } catch (err) {
                 const errMsg = `Tool execution error: ${String(err)}`;
-                window.webContents.send('llm:tool-result', {
+                window.webContents.send(RENDERER.LLM.TOOL_RESULT, {
                   id: toolCall.id,
                   name: toolCall.function.name,
                   result: errMsg
@@ -251,7 +252,7 @@ async function streamChatWithTools(
           }
 
           if (finish_reason === 'stop' || finish_reason === 'length') {
-            window.webContents.send('llm:done');
+            window.webContents.send(RENDERER.LLM.DONE);
             abortController = null;
             return;
           }
@@ -260,12 +261,12 @@ async function streamChatWithTools(
         }
       }
     }
-    window.webContents.send('llm:done');
+    window.webContents.send(RENDERER.LLM.DONE);
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      window.webContents.send('llm:done');
+      window.webContents.send(RENDERER.LLM.DONE);
     } else {
-      window.webContents.send('llm:error', String(err));
+      window.webContents.send(RENDERER.LLM.ERROR, String(err));
     }
   } finally {
     if (!delegatedToDoStream) {
@@ -310,25 +311,25 @@ async function doStreamChat(
     });
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      window.webContents.send('llm:done');
+      window.webContents.send(RENDERER.LLM.DONE);
       abortController = null;
       return;
     }
-    window.webContents.send('llm:error', String(err));
+    window.webContents.send(RENDERER.LLM.ERROR, String(err));
     abortController = null;
     return;
   }
 
   if (!res.ok) {
     const errorBody = await res.text();
-    window.webContents.send('llm:error', `API Error ${res.status}: ${errorBody}`);
+    window.webContents.send(RENDERER.LLM.ERROR, `API Error ${res.status}: ${errorBody}`);
     abortController = null;
     return;
   }
 
   const reader = res.body?.getReader();
   if (!reader) {
-    window.webContents.send('llm:error', 'No response body');
+    window.webContents.send(RENDERER.LLM.ERROR, 'No response body');
     abortController = null;
     return;
   }
@@ -350,7 +351,7 @@ async function doStreamChat(
         if (!trimmed || !trimmed.startsWith('data:')) continue;
         const data = trimmed.slice(5).trim();
         if (data === '[DONE]') {
-          window.webContents.send('llm:done');
+          window.webContents.send(RENDERER.LLM.DONE);
           return;
         }
 
@@ -360,19 +361,19 @@ async function doStreamChat(
           };
           const delta = parsed.choices?.[0]?.delta?.content;
           if (delta) {
-            window.webContents.send('llm:chunk', delta);
+            window.webContents.send(RENDERER.LLM.CHUNK, delta);
           }
         } catch {
           // skip malformed JSON chunks
         }
       }
     }
-    window.webContents.send('llm:done');
+    window.webContents.send(RENDERER.LLM.DONE);
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      window.webContents.send('llm:done');
+      window.webContents.send(RENDERER.LLM.DONE);
     } else {
-      window.webContents.send('llm:error', String(err));
+      window.webContents.send(RENDERER.LLM.ERROR, String(err));
     }
   } finally {
     abortController = null;

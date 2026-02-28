@@ -6,15 +6,15 @@ const systemInfo = ref<{ platform: string; arch: string; nodeVersion: string } |
 
 onMounted(async () => {
   try {
-    appVersion.value = await window.electron.ipcRenderer.invoke('get-app-version');
-    systemInfo.value = await window.electron.ipcRenderer.invoke('get-system-info');
+    appVersion.value = await window.api.getAppVersion();
+    systemInfo.value = await window.api.getSystemInfo();
   } catch {
     appVersion.value = 'N/A';
   }
 });
 
 function openExternal(url: string): void {
-  window.electron.ipcRenderer.invoke('open-external-url', url);
+  window.api.openExternalUrl(url);
 }
 </script>
 

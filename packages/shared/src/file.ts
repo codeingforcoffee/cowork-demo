@@ -1,0 +1,8 @@
+/** 主进程 FILE 相关通道 */
+export const FILE = {
+  PICK: 'MAIN_FILE__PICK',
+  PICK_FOLDER: 'MAIN_FILE__PICK_FOLDER',
+  READ: 'MAIN_FILE__READ',
+  LIST_DIR: 'MAIN_FILE__LIST_DIR',
+  WRITE: 'MAIN_FILE__WRITE'
+} as const;

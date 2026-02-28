@@ -91,6 +91,12 @@ interface ToolResultInfo {
 }
 
 interface AppAPI {
+  // App
+  getAppVersion: () => Promise<string>;
+  getSystemInfo: () => Promise<{ platform: string; arch: string; nodeVersion: string }>;
+  openExternalUrl: (url: string) => Promise<void>;
+  getSystemMemory: () => Promise<{ total: number; free: number }>;
+
   // Settings
   loadSettings: () => Promise<AppSettings>;
   saveSettings: (settings: AppSettings) => Promise<boolean>;

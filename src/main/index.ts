@@ -1,4 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron';
+import { MAIN, RENDERER } from '@cowork/shared';
 import { join } from 'path';
 import os from 'os';
 import { electronApp, optimizer, is } from '@electron-toolkit/utils';
@@ -158,76 +159,76 @@ function createToolExecutor(toolToMcp: Map<string, McpConnection>): ToolExecutor
 
 function registerIpcHandlers(): void {
   // App info
-  ipcMain.handle('get-app-version', () => app.getVersion());
-  ipcMain.handle('get-system-info', () => ({
+  ipcMain.handle(MAIN.APP.GET_VERSION, () => app.getVersion());
+  ipcMain.handle(MAIN.APP.GET_SYSTEM_INFO, () => ({
     platform: process.platform,
     arch: process.arch,
     nodeVersion: process.version
   }));
-  ipcMain.handle('open-external-url', (_event, url: string) => {
+  ipcMain.handle(MAIN.APP.OPEN_EXTERNAL_URL, (_event, url: string) => {
     if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
       shell.openExternal(url);
     }
   });
-  ipcMain.handle('get-system-memory', () => ({
+  ipcMain.handle(MAIN.APP.GET_SYSTEM_MEMORY, () => ({
     total: Math.round(os.totalmem() / 1024 / 1024),
     free: Math.round(os.freemem() / 1024 / 1024)
   }));
 
   // Settings
-  ipcMain.handle('settings:load', () => loadSettings());
-  ipcMain.handle('settings:save', (_event, settings: AppSettings) => {
+  ipcMain.handle(MAIN.SETTINGS.LOAD, () => loadSettings());
+  ipcMain.handle(MAIN.SETTINGS.SAVE, (_event, settings: AppSettings) => {
     saveSettings(settings);
     return true;
   });
 
   // Sessions
-  ipcMain.handle('sessions:load', () => loadSessions());
-  ipcMain.handle('sessions:save', (_event, data: SessionsData) => {
+  ipcMain.handle(MAIN.SESSIONS.LOAD, () => loadSessions());
+  ipcMain.handle(MAIN.SESSIONS.SAVE, (_event, data: SessionsData) => {
     saveSessions(data);
     return true;
   });
 
   // MCP management
-  ipcMain.handle('mcp:load-builtin', () => BUILTIN_MCPS);
-  ipcMain.handle('mcp:load-user', () => loadMcpConfig());
-  ipcMain.handle('mcp:save-user', (_event, data: McpData) => {
+  ipcMain.handle(MAIN.MCP.LOAD_BUILTIN, () => BUILTIN_MCPS);
+  ipcMain.handle(MAIN.MCP.LOAD_USER, () => loadMcpConfig());
+  ipcMain.handle(MAIN.MCP.SAVE_USER, (_event, data: McpData) => {
     saveMcpConfig(data);
     return true;
   });
 
   // Experts management
-  ipcMain.handle('experts:load', () => loadExperts());
-  ipcMain.handle('experts:save', (_event, data: ExpertsData) => {
+  ipcMain.handle(MAIN.EXPERTS.LOAD, () => loadExperts());
+  ipcMain.handle(MAIN.EXPERTS.SAVE, (_event, data: ExpertsData) => {
     saveExperts(data);
     return true;
   });
 
   // File operations
-  ipcMain.handle('file:pick', (event) => {
+  ipcMain.handle(MAIN.FILE.PICK, (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     return win ? pickFile(win) : null;
   });
-  ipcMain.handle('file:pick-folder', (event) => {
+  ipcMain.handle(MAIN.FILE.PICK_FOLDER, (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     return win ? pickFolder(win) : null;
   });
-  ipcMain.handle('file:read', (_event, filePath: string) => readFileContent(filePath));
-  ipcMain.handle('file:list-dir', (_event, dirPath: string) => listDirectory(dirPath));
-  ipcMain.handle('file:write', (_event, filePath: string, content: string) => {
+  ipcMain.handle(MAIN.FILE.READ, (_event, filePath: string) => readFileContent(filePath));
+  ipcMain.handle(MAIN.FILE.LIST_DIR, (_event, dirPath: string) => listDirectory(dirPath));
+  ipcMain.handle(MAIN.FILE.WRITE, (_event, filePath: string, content: string) => {
     writeFileContent(filePath, content);
     return true;
   });
 
   // LLM chat (streaming) with optional MCP tool support
   ipcMain.handle(
-    'llm:chat',
+    MAIN.LLM.CHAT,
     async (_event, messages: ChatMessage[], enabledMcpIds: string[] = []) => {
       if (!mainWindow) return;
       const settings = loadSettings();
       if (!settings.llm.apiKey) {
         mainWindow.webContents.send(
-          'llm:error',
+          RENDERER.LLM.ERROR,
           'API Key not configured. Please set it in Settings.'
         );
         return;
@@ -263,7 +264,7 @@ function registerIpcHandlers(): void {
       }
     }
   );
-  ipcMain.handle('llm:abort', () => {
+  ipcMain.handle(MAIN.LLM.ABORT, () => {
     abortLLMStream();
   });
 }

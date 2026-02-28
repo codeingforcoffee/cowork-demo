@@ -48,7 +48,7 @@ async function removeServer(id: string): Promise<void> {
 }
 
 function openMcpDocs(): void {
-  window.electron.ipcRenderer.invoke('open-external-url', 'https://modelcontextprotocol.io');
+  window.api.openExternalUrl('https://modelcontextprotocol.io');
 }
 </script>
 
