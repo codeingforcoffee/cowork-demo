@@ -31,6 +31,7 @@ import {
 } from './mcp-service';
 import { loadExperts, saveExperts, type ExpertsData } from './experts-service';
 import { connectMcpServer, callMcpTool, type McpConnection } from './mcp-client';
+import { execShell } from './shell-service';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -219,6 +220,11 @@ function registerIpcHandlers(): void {
     writeFileContent(filePath, content);
     return true;
   });
+
+  // Shell execution (cross-platform)
+  ipcMain.handle(MAIN.SHELL.EXEC, (_event, command: string, cwd?: string) =>
+    execShell(command, cwd)
+  );
 
   // LLM chat (streaming) with optional MCP tool support
   ipcMain.handle(

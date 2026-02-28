@@ -18,6 +18,7 @@ const editingTitle = ref('');
 const bottomNav = [
   { path: '/experts', labelKey: 'nav.experts', icon: '🧠' },
   { path: '/mcp', labelKey: 'nav.mcp', icon: '🔌' },
+  { path: '/shell', labelKey: 'nav.shell', icon: '⌨️' },
   { path: '/settings', labelKey: 'nav.settings', icon: '⚙️' },
   { path: '/about', labelKey: 'nav.about', icon: 'ℹ️' }
 ];

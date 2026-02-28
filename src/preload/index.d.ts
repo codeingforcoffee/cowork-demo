@@ -121,6 +121,12 @@ interface AppAPI {
   listDir: (path: string) => Promise<FileEntry[]>;
   writeFile: (path: string, content: string) => Promise<boolean>;
 
+  // Shell execution (cross-platform)
+  execShell: (
+    command: string,
+    cwd?: string
+  ) => Promise<{ stdout: string; stderr: string; exitCode: number; error?: string }>;
+
   // LLM streaming
   sendChat: (
     messages: { role: string; content: string | null; tool_call_id?: string }[],

@@ -28,6 +28,11 @@ const router = createRouter({
       path: '/about',
       name: 'about',
       component: () => import('../views/AboutView.vue')
+    },
+    {
+      path: '/shell',
+      name: 'shell',
+      component: () => import('../views/ShellView.vue')
     }
   ]
 });

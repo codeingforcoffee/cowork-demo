@@ -42,6 +42,10 @@ const api = {
   writeFile: (path: string, content: string): Promise<boolean> =>
     ipcRenderer.invoke(MAIN.FILE.WRITE, path, content),
 
+  // Shell execution (cross-platform)
+  execShell: (command: string, cwd?: string): Promise<{ stdout: string; stderr: string; exitCode: number; error?: string }> =>
+    ipcRenderer.invoke(MAIN.SHELL.EXEC, command, cwd),
+
   // LLM (streaming) with tool support
   sendChat: (
     messages: { role: string; content: string | null; tool_call_id?: string }[],
