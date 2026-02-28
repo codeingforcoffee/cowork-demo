@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { ChatMessage } from '../stores/chat'
+import { computed } from 'vue';
+import type { ChatMessage } from '../stores/chat';
 
-const props = defineProps<{ message: ChatMessage }>()
+const props = defineProps<{ message: ChatMessage }>();
 
-const isUser = computed(() => props.message.role === 'user')
+const isUser = computed(() => props.message.role === 'user');
 </script>
 
 <template>

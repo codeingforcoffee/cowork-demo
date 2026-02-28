@@ -1,52 +1,52 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from 'vue';
 
 const emit = defineEmits<{
-  send: [content: string, files: { name: string; path: string; content: string }[]]
-  abort: []
-}>()
+  send: [content: string, files: { name: string; path: string; content: string }[]];
+  abort: [];
+}>();
 
-defineProps<{ isStreaming: boolean }>()
+defineProps<{ isStreaming: boolean }>();
 
-const input = ref('')
-const attachedFiles = ref<{ name: string; path: string; content: string }[]>([])
+const input = ref('');
+const attachedFiles = ref<{ name: string; path: string; content: string }[]>([]);
 
 async function handleAttachFile(): Promise<void> {
-  const filePath = await window.api.pickFile()
-  if (!filePath) return
+  const filePath = await window.api.pickFile();
+  if (!filePath) return;
 
-  const alreadyAttached = attachedFiles.value.some((f) => f.path === filePath)
-  if (alreadyAttached) return
+  const alreadyAttached = attachedFiles.value.some((f) => f.path === filePath);
+  if (alreadyAttached) return;
 
   try {
-    const fileInfo = await window.api.readFile(filePath)
+    const fileInfo = await window.api.readFile(filePath);
     attachedFiles.value.push({
       name: fileInfo.name,
       path: filePath,
       content: fileInfo.content
-    })
+    });
   } catch (err) {
-    console.error('Failed to read file:', err)
+    console.error('Failed to read file:', err);
   }
 }
 
 function removeFile(path: string): void {
-  attachedFiles.value = attachedFiles.value.filter((f) => f.path !== path)
+  attachedFiles.value = attachedFiles.value.filter((f) => f.path !== path);
 }
 
 function handleSend(): void {
-  const text = input.value.trim()
-  if (!text) return
+  const text = input.value.trim();
+  if (!text) return;
 
-  emit('send', text, [...attachedFiles.value])
-  input.value = ''
-  attachedFiles.value = []
+  emit('send', text, [...attachedFiles.value]);
+  input.value = '';
+  attachedFiles.value = [];
 }
 
 function handleKeydown(e: KeyboardEvent): void {
   if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    handleSend()
+    e.preventDefault();
+    handleSend();
   }
 }
 </script>

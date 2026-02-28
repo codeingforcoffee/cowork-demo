@@ -15,6 +15,7 @@
     "collapseSidebar": "收起侧边栏"
   },
   "nav": {
+    "experts": "专家探索",
     "mcp": "MCP",
     "settings": "设置",
     "about": "关于"
@@ -78,6 +79,40 @@
     "addServer": "添加服务器",
     "noServers": "未配置 MCP 服务器。",
     "addFirst": "添加您的第一个服务器以开始使用。"
+  },
+  "experts": {
+    "title": "专家探索",
+    "subtitle": "创建自定义智能体：选择 MCP 工具 + 预设提示词",
+    "createExpert": "创建专家",
+    "whatIsExpert": "什么是专家？",
+    "whatIsExpertDesc": "专家是用户自定义的智能体，可包含：选中的 MCP 工具 + 预设提示词。创建后，在聊天中选择该专家即可自动应用其工具和角色设定。",
+    "myExperts": "我的专家",
+    "noExperts": "还没有创建专家",
+    "noExpertsHint": "创建专家后，可在聊天中快速切换使用",
+    "edit": "编辑",
+    "deleteBtn": "删除",
+    "modalTitleCreate": "创建专家",
+    "modalTitleEdit": "编辑专家",
+    "modalDescCreate": "自定义 MCP 工具与预设提示词的智能体",
+    "modalDescEdit": "修改专家配置",
+    "nameLabel": "专家名称 *",
+    "namePlaceholder": "例如：代码助手",
+    "descLabel": "描述（可选）",
+    "descPlaceholder": "简要描述该专家的用途",
+    "mcpLabel": "选择 MCP 工具",
+    "mcpHint": "勾选该专家可使用的 MCP 工具",
+    "noMcps": "暂无 MCP 工具，请先在 MCP 管理中添加",
+    "promptLabel": "预设提示词 *",
+    "promptPlaceholder": "例如：你是一位专业的代码助手，擅长分析代码、重构和优化。请用中文回答，并给出清晰的代码示例。",
+    "promptHint": "该提示词将作为 system 消息注入对话，定义专家的角色与行为",
+    "save": "保存",
+    "create": "创建专家",
+    "errorNameRequired": "请输入专家名称",
+    "errorPromptRequired": "请输入预设提示词",
+    "selectExpert": "选择专家",
+    "expert": "专家",
+    "none": "无（默认）",
+    "noExpertsGoCreate": "暂无专家，前往专家探索创建"
   },
   "chat": {
     "placeholder": "发送消息...",

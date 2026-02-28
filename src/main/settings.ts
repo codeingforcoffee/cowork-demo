@@ -1,13 +1,13 @@
-import { app } from 'electron'
-import fs from 'fs'
-import path from 'path'
+import { app } from 'electron';
+import fs from 'fs';
+import path from 'path';
 
 export interface AppSettings {
   llm: {
-    baseUrl: string
-    apiKey: string
-    model: string
-  }
+    baseUrl: string;
+    apiKey: string;
+    model: string;
+  };
 }
 
 const defaultSettings: AppSettings = {
@@ -16,27 +16,27 @@ const defaultSettings: AppSettings = {
     apiKey: '',
     model: 'gpt-4o-mini'
   }
-}
+};
 
 function getSettingsPath(): string {
-  return path.join(app.getPath('userData'), 'settings.json')
+  return path.join(app.getPath('userData'), 'settings.json');
 }
 
 export function loadSettings(): AppSettings {
   try {
-    const raw = fs.readFileSync(getSettingsPath(), 'utf-8')
-    const parsed = JSON.parse(raw)
+    const raw = fs.readFileSync(getSettingsPath(), 'utf-8');
+    const parsed = JSON.parse(raw);
     return {
       llm: {
         ...defaultSettings.llm,
         ...parsed.llm
       }
-    }
+    };
   } catch {
-    return { ...defaultSettings }
+    return { ...defaultSettings };
   }
 }
 
 export function saveSettings(settings: AppSettings): void {
-  fs.writeFileSync(getSettingsPath(), JSON.stringify(settings, null, 2), 'utf-8')
+  fs.writeFileSync(getSettingsPath(), JSON.stringify(settings, null, 2), 'utf-8');
 }

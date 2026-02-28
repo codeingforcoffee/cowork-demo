@@ -15,6 +15,7 @@
     "collapseSidebar": "Collapse sidebar"
   },
   "nav": {
+    "experts": "Experts",
     "mcp": "MCP",
     "settings": "Settings",
     "about": "About"
@@ -78,6 +79,40 @@
     "addServer": "Add Server",
     "noServers": "No MCP servers configured.",
     "addFirst": "Add your first server to get started."
+  },
+  "experts": {
+    "title": "Experts",
+    "subtitle": "Create custom agents: select MCP tools + preset prompts",
+    "createExpert": "Create Expert",
+    "whatIsExpert": "What is an Expert?",
+    "whatIsExpertDesc": "An expert is a user-defined agent that includes selected MCP tools and preset prompts. After creation, select it in chat to automatically apply its tools and role settings.",
+    "myExperts": "My Experts",
+    "noExperts": "No experts yet",
+    "noExpertsHint": "Create experts to quickly switch between them in chat",
+    "edit": "Edit",
+    "deleteBtn": "Delete",
+    "modalTitleCreate": "Create Expert",
+    "modalTitleEdit": "Edit Expert",
+    "modalDescCreate": "Custom agent with MCP tools and preset prompts",
+    "modalDescEdit": "Modify expert configuration",
+    "nameLabel": "Expert Name *",
+    "namePlaceholder": "e.g. Code Assistant",
+    "descLabel": "Description (optional)",
+    "descPlaceholder": "Brief description of this expert's purpose",
+    "mcpLabel": "Select MCP Tools",
+    "mcpHint": "Check the MCP tools this expert can use",
+    "noMcps": "No MCP tools. Add some in MCP settings first.",
+    "promptLabel": "Preset Prompt *",
+    "promptPlaceholder": "e.g. You are a professional code assistant, skilled in analyzing, refactoring and optimizing code. Respond in the user's language with clear examples.",
+    "promptHint": "This prompt will be injected as system message to define the expert's role and behavior",
+    "save": "Save",
+    "create": "Create Expert",
+    "errorNameRequired": "Please enter expert name",
+    "errorPromptRequired": "Please enter preset prompt",
+    "selectExpert": "Select Expert",
+    "expert": "Expert",
+    "none": "None (default)",
+    "noExpertsGoCreate": "No experts yet. Go to Experts to create one"
   },
   "chat": {
     "placeholder": "Send a message...",

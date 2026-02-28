@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import { useThemeStore, type ThemeMode } from '../stores/theme'
+import { useI18n } from 'vue-i18n';
+import { useThemeStore, type ThemeMode } from '../stores/theme';
 
-const { t } = useI18n()
-const themeStore = useThemeStore()
+const { t } = useI18n();
+const themeStore = useThemeStore();
 
 const options: { value: ThemeMode; labelKey: string }[] = [
   { value: 'light', labelKey: 'theme.light' },
   { value: 'dark', labelKey: 'theme.dark' },
   { value: 'system', labelKey: 'theme.system' }
-]
+];
 </script>
 
 <template>

@@ -1,49 +1,49 @@
-import { BrowserWindow } from 'electron'
+import { BrowserWindow } from 'electron';
 
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool'
-  content: string | null
-  tool_call_id?: string
-  tool_calls?: ToolCall[]
-  name?: string
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | null;
+  tool_call_id?: string;
+  tool_calls?: ToolCall[];
+  name?: string;
 }
 
 export interface LLMConfig {
-  baseUrl: string
-  apiKey: string
-  model: string
+  baseUrl: string;
+  apiKey: string;
+  model: string;
 }
 
 export interface ToolDefinition {
-  type: 'function'
+  type: 'function';
   function: {
-    name: string
-    description: string
+    name: string;
+    description: string;
     parameters: {
-      type: string
-      properties: Record<string, unknown>
-      required?: string[]
-    }
-  }
+      type: string;
+      properties: Record<string, unknown>;
+      required?: string[];
+    };
+  };
 }
 
 export interface ToolCall {
-  id: string
-  type: 'function'
+  id: string;
+  type: 'function';
   function: {
-    name: string
-    arguments: string
-  }
+    name: string;
+    arguments: string;
+  };
 }
 
-export type ToolExecutor = (name: string, args: Record<string, unknown>) => Promise<string>
+export type ToolExecutor = (name: string, args: Record<string, unknown>) => Promise<string>;
 
-let abortController: AbortController | null = null
+let abortController: AbortController | null = null;
 
 export function abortLLMStream(): void {
   if (abortController) {
-    abortController.abort()
-    abortController = null
+    abortController.abort();
+    abortController = null;
   }
 }
 
@@ -55,15 +55,15 @@ export async function streamChat(
   toolExecutor?: ToolExecutor
 ): Promise<void> {
   if (tools.length > 0 && toolExecutor) {
-    return streamChatWithTools(config, messages, tools, toolExecutor, window)
+    return streamChatWithTools(config, messages, tools, toolExecutor, window);
   }
-  return doStreamChat(config, messages, window)
+  return doStreamChat(config, messages, window);
 }
 
 interface StreamToolCallAccumulator {
-  id: string
-  type: 'function'
-  function: { name: string; arguments: string }
+  id: string;
+  type: 'function';
+  function: { name: string; arguments: string };
 }
 
 async function streamChatWithTools(
@@ -73,19 +73,19 @@ async function streamChatWithTools(
   toolExecutor: ToolExecutor,
   window: BrowserWindow
 ): Promise<void> {
-  const url = `${config.baseUrl.replace(/\/+$/, '')}/chat/completions`
+  const url = `${config.baseUrl.replace(/\/+$/, '')}/chat/completions`;
   if (!abortController) {
-    abortController = new AbortController()
+    abortController = new AbortController();
   }
 
-  const cleanMessages = messages.map(m => ({
+  const cleanMessages = messages.map((m) => ({
     role: m.role,
     content: m.content,
     ...(m.tool_call_id ? { tool_call_id: m.tool_call_id } : {}),
     ...(m.tool_calls ? { tool_calls: m.tool_calls } : {})
-  }))
+  }));
 
-  let res: Response
+  let res: Response;
   try {
     res = await fetch(url, {
       method: 'POST',
@@ -101,94 +101,94 @@ async function streamChatWithTools(
         stream: true
       }),
       signal: abortController.signal
-    })
+    });
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      window.webContents.send('llm:done')
-      abortController = null
-      return
+      window.webContents.send('llm:done');
+      abortController = null;
+      return;
     }
-    window.webContents.send('llm:error', String(err))
-    abortController = null
-    return
+    window.webContents.send('llm:error', String(err));
+    abortController = null;
+    return;
   }
 
   if (!res.ok) {
-    const errorBody = await res.text()
-    window.webContents.send('llm:error', `API Error ${res.status}: ${errorBody}`)
-    abortController = null
-    return
+    const errorBody = await res.text();
+    window.webContents.send('llm:error', `API Error ${res.status}: ${errorBody}`);
+    abortController = null;
+    return;
   }
 
-  const reader = res.body?.getReader()
+  const reader = res.body?.getReader();
   if (!reader) {
-    window.webContents.send('llm:error', 'No response body')
-    abortController = null
-    return
+    window.webContents.send('llm:error', 'No response body');
+    abortController = null;
+    return;
   }
 
-  const decoder = new TextDecoder()
-  let buffer = ''
-  const toolCallsAccum: Map<number, StreamToolCallAccumulator> = new Map()
-  let delegatedToDoStream = false
+  const decoder = new TextDecoder();
+  let buffer = '';
+  const toolCallsAccum: Map<number, StreamToolCallAccumulator> = new Map();
+  let delegatedToDoStream = false;
 
   try {
     while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
+      const { done, value } = await reader.read();
+      if (done) break;
 
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
       for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed || !trimmed.startsWith('data:')) continue
-        const data = trimmed.slice(5).trim()
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+        const data = trimmed.slice(5).trim();
         if (data === '[DONE]') {
-          window.webContents.send('llm:done')
-          abortController = null
-          return
+          window.webContents.send('llm:done');
+          abortController = null;
+          return;
         }
 
         try {
           const parsed = JSON.parse(data) as {
             choices: {
               delta: {
-                content?: string
+                content?: string;
                 tool_calls?: Array<{
-                  index: number
-                  id?: string
-                  function?: { name?: string; arguments?: string }
-                }>
-              }
-              finish_reason?: string
-            }[]
-          }
-          const choice = parsed.choices?.[0]
-          if (!choice) continue
+                  index: number;
+                  id?: string;
+                  function?: { name?: string; arguments?: string };
+                }>;
+              };
+              finish_reason?: string;
+            }[];
+          };
+          const choice = parsed.choices?.[0];
+          if (!choice) continue;
 
-          const { delta, finish_reason } = choice
+          const { delta, finish_reason } = choice;
 
           if (delta?.content) {
-            window.webContents.send('llm:chunk', delta.content)
+            window.webContents.send('llm:chunk', delta.content);
           }
 
           if (delta?.tool_calls) {
             for (const tc of delta.tool_calls) {
-              const idx = tc.index
-              let acc = toolCallsAccum.get(idx)
+              const idx = tc.index;
+              let acc = toolCallsAccum.get(idx);
               if (!acc) {
                 acc = {
                   id: tc.id || `call_${idx}`,
                   type: 'function',
                   function: { name: '', arguments: '' }
-                }
-                toolCallsAccum.set(idx, acc)
+                };
+                toolCallsAccum.set(idx, acc);
               }
-              if (tc.id) acc.id = tc.id
-              if (tc.function?.name) acc.function.name += tc.function.name
-              if (tc.function?.arguments) acc.function.arguments += tc.function.arguments
+              if (tc.id) acc.id = tc.id;
+              if (tc.function?.name) acc.function.name += tc.function.name;
+              if (tc.function?.arguments) acc.function.arguments += tc.function.arguments;
             }
           }
 
@@ -199,77 +199,77 @@ async function streamChatWithTools(
                 id: acc.id,
                 type: 'function' as const,
                 function: { name: acc.function.name, arguments: acc.function.arguments }
-              }))
+              }));
 
             const assistantMsg: ChatMessage = {
               role: 'assistant',
               content: null,
               tool_calls: toolCalls
-            }
-            const currentMessages: ChatMessage[] = [...messages, assistantMsg]
+            };
+            const currentMessages: ChatMessage[] = [...messages, assistantMsg];
 
             for (const toolCall of toolCalls) {
               try {
-                const args = JSON.parse(toolCall.function.arguments) as Record<string, unknown>
+                const args = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
 
                 window.webContents.send('llm:tool-call', {
                   id: toolCall.id,
                   name: toolCall.function.name,
                   args
-                })
+                });
 
-                const result = await toolExecutor(toolCall.function.name, args)
+                const result = await toolExecutor(toolCall.function.name, args);
 
                 window.webContents.send('llm:tool-result', {
                   id: toolCall.id,
                   name: toolCall.function.name,
                   result
-                })
+                });
 
                 currentMessages.push({
                   role: 'tool',
                   content: result,
                   tool_call_id: toolCall.id
-                })
+                });
               } catch (err) {
-                const errMsg = `Tool execution error: ${String(err)}`
+                const errMsg = `Tool execution error: ${String(err)}`;
                 window.webContents.send('llm:tool-result', {
                   id: toolCall.id,
                   name: toolCall.function.name,
                   result: errMsg
-                })
+                });
                 currentMessages.push({
                   role: 'tool',
                   content: errMsg,
                   tool_call_id: toolCall.id
-                })
+                });
               }
             }
 
-            delegatedToDoStream = true
-            return doStreamChat(config, currentMessages, window)
+            delegatedToDoStream = true;
+            return doStreamChat(config, currentMessages, window);
           }
 
           if (finish_reason === 'stop' || finish_reason === 'length') {
-            window.webContents.send('llm:done')
-            abortController = null
-            return
+            window.webContents.send('llm:done');
+            abortController = null;
+            return;
           }
         } catch {
           // skip malformed JSON chunks
         }
       }
     }
-    window.webContents.send('llm:done')
+    window.webContents.send('llm:done');
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      window.webContents.send('llm:done')
+      window.webContents.send('llm:done');
     } else {
-      window.webContents.send('llm:error', String(err))
+      window.webContents.send('llm:error', String(err));
     }
   } finally {
     if (!delegatedToDoStream) {
-      abortController = null
+      abortController = null;
     }
   }
 }
@@ -280,20 +280,20 @@ async function doStreamChat(
   window: BrowserWindow
 ): Promise<void> {
   if (!abortController) {
-    abortController = new AbortController()
+    abortController = new AbortController();
   }
 
-  const url = `${config.baseUrl.replace(/\/+$/, '')}/chat/completions`
+  const url = `${config.baseUrl.replace(/\/+$/, '')}/chat/completions`;
 
   // Strip any non-standard fields before sending
-  const cleanMessages = messages.map(m => ({
+  const cleanMessages = messages.map((m) => ({
     role: m.role,
     content: m.content,
     ...(m.tool_call_id ? { tool_call_id: m.tool_call_id } : {}),
     ...(m.tool_calls ? { tool_calls: m.tool_calls } : {})
-  }))
+  }));
 
-  let res: Response
+  let res: Response;
   try {
     res = await fetch(url, {
       method: 'POST',
@@ -307,74 +307,74 @@ async function doStreamChat(
         stream: true
       }),
       signal: abortController.signal
-    })
+    });
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      window.webContents.send('llm:done')
-      abortController = null
-      return
+      window.webContents.send('llm:done');
+      abortController = null;
+      return;
     }
-    window.webContents.send('llm:error', String(err))
-    abortController = null
-    return
+    window.webContents.send('llm:error', String(err));
+    abortController = null;
+    return;
   }
 
   if (!res.ok) {
-    const errorBody = await res.text()
-    window.webContents.send('llm:error', `API Error ${res.status}: ${errorBody}`)
-    abortController = null
-    return
+    const errorBody = await res.text();
+    window.webContents.send('llm:error', `API Error ${res.status}: ${errorBody}`);
+    abortController = null;
+    return;
   }
 
-  const reader = res.body?.getReader()
+  const reader = res.body?.getReader();
   if (!reader) {
-    window.webContents.send('llm:error', 'No response body')
-    abortController = null
-    return
+    window.webContents.send('llm:error', 'No response body');
+    abortController = null;
+    return;
   }
 
-  const decoder = new TextDecoder()
-  let buffer = ''
+  const decoder = new TextDecoder();
+  let buffer = '';
 
   try {
     while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
+      const { done, value } = await reader.read();
+      if (done) break;
 
-      buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() || ''
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
       for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed || !trimmed.startsWith('data:')) continue
-        const data = trimmed.slice(5).trim()
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+        const data = trimmed.slice(5).trim();
         if (data === '[DONE]') {
-          window.webContents.send('llm:done')
-          return
+          window.webContents.send('llm:done');
+          return;
         }
 
         try {
           const parsed = JSON.parse(data) as {
-            choices: { delta: { content?: string } }[]
-          }
-          const delta = parsed.choices?.[0]?.delta?.content
+            choices: { delta: { content?: string } }[];
+          };
+          const delta = parsed.choices?.[0]?.delta?.content;
           if (delta) {
-            window.webContents.send('llm:chunk', delta)
+            window.webContents.send('llm:chunk', delta);
           }
         } catch {
           // skip malformed JSON chunks
         }
       }
     }
-    window.webContents.send('llm:done')
+    window.webContents.send('llm:done');
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
-      window.webContents.send('llm:done')
+      window.webContents.send('llm:done');
     } else {
-      window.webContents.send('llm:error', String(err))
+      window.webContents.send('llm:error', String(err));
     }
   } finally {
-    abortController = null
+    abortController = null;
   }
 }

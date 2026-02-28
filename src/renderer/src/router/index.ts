@@ -1,5 +1,5 @@
-import { createRouter, createWebHashHistory } from 'vue-router'
-import ChatView from '../views/ChatView.vue'
+import { createRouter, createWebHashHistory } from 'vue-router';
+import ChatView from '../views/ChatView.vue';
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -15,6 +15,11 @@ const router = createRouter({
       component: () => import('../views/McpView.vue')
     },
     {
+      path: '/experts',
+      name: 'experts',
+      component: () => import('../views/ExpertsView.vue')
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import('../views/SettingsView.vue')
@@ -25,6 +30,6 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue')
     }
   ]
-})
+});
 
-export default router
+export default router;

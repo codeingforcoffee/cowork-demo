@@ -1,18 +1,24 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
-import os from 'os'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
+import { app, shell, BrowserWindow, ipcMain } from 'electron';
+import { join } from 'path';
+import os from 'os';
+import { electronApp, optimizer, is } from '@electron-toolkit/utils';
+import icon from '../../resources/icon.png?asset';
 import {
   streamChat,
   abortLLMStream,
   type ChatMessage,
   type ToolDefinition,
   type ToolExecutor
-} from './llm'
-import { pickFile, pickFolder, readFileContent, listDirectory, writeFileContent } from './file-service'
-import { loadSettings, saveSettings, type AppSettings } from './settings'
-import { loadSessions, saveSessions, type SessionsData } from './sessions-service'
+} from './llm';
+import {
+  pickFile,
+  pickFolder,
+  readFileContent,
+  listDirectory,
+  writeFileContent
+} from './file-service';
+import { loadSettings, saveSettings, type AppSettings } from './settings';
+import { loadSessions, saveSessions, type SessionsData } from './sessions-service';
 import {
   loadMcpConfig,
   saveMcpConfig,
@@ -21,14 +27,11 @@ import {
   BUILTIN_MCPS,
   type McpData,
   type McpServer
-} from './mcp-service'
-import {
-  connectMcpServer,
-  callMcpTool,
-  type McpConnection
-} from './mcp-client'
+} from './mcp-service';
+import { loadExperts, saveExperts, type ExpertsData } from './experts-service';
+import { connectMcpServer, callMcpTool, type McpConnection } from './mcp-client';
 
-let mainWindow: BrowserWindow | null = null
+let mainWindow: BrowserWindow | null = null;
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -45,21 +48,21 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
-  })
+  });
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow!.show()
-  })
+    mainWindow!.show();
+  });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
+    shell.openExternal(details.url);
+    return { action: 'deny' };
+  });
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
   }
 }
 
@@ -69,13 +72,13 @@ async function buildToolDefinitions(
   enabledMcpIds: string[],
   userServers: McpServer[]
 ): Promise<{
-  tools: ToolDefinition[]
-  mcpConnections: McpConnection[]
-  toolToMcp: Map<string, McpConnection>
+  tools: ToolDefinition[];
+  mcpConnections: McpConnection[];
+  toolToMcp: Map<string, McpConnection>;
 }> {
-  const tools: ToolDefinition[] = []
-  const mcpConnections: McpConnection[] = []
-  const toolToMcp = new Map<string, McpConnection>()
+  const tools: ToolDefinition[] = [];
+  const mcpConnections: McpConnection[] = [];
+  const toolToMcp = new Map<string, McpConnection>();
 
   // 内置工具
   if (enabledMcpIds.includes('builtin-web-search')) {
@@ -96,185 +99,192 @@ async function buildToolDefinitions(
           required: ['query']
         }
       }
-    })
+    });
   }
 
   // 用户自定义 MCP 服务器
   for (const id of enabledMcpIds) {
-    if (id.startsWith('builtin-')) continue
-    const server = userServers.find(s => s.id === id)
-    if (!server) continue
+    if (id.startsWith('builtin-')) continue;
+    const server = userServers.find((s) => s.id === id);
+    if (!server) continue;
 
-    const conn = await connectMcpServer(server)
-    if (!conn) continue
+    const conn = await connectMcpServer(server);
+    if (!conn) continue;
 
-    mcpConnections.push(conn)
+    mcpConnections.push(conn);
     for (const t of conn.tools) {
       const def: ToolDefinition = {
         type: 'function',
         function: t.function
-      }
-      tools.push(def)
-      toolToMcp.set(t.function.name, conn)
+      };
+      tools.push(def);
+      toolToMcp.set(t.function.name, conn);
     }
   }
 
-  return { tools, mcpConnections, toolToMcp }
+  return { tools, mcpConnections, toolToMcp };
 }
 
 // 将实时系统信息直接注入 system message，不依赖模型是否决定调用工具
-function injectSystemInfoIfEnabled(
-  enabledMcpIds: string[],
-  messages: ChatMessage[]
-): void {
-  if (!enabledMcpIds.includes('builtin-system-info')) return
+function injectSystemInfoIfEnabled(enabledMcpIds: string[], messages: ChatMessage[]): void {
+  if (!enabledMcpIds.includes('builtin-system-info')) return;
 
-  const snapshot = executeSystemInfo()
-  const sysMsg = messages.find(m => m.role === 'system')
+  const snapshot = executeSystemInfo();
+  const sysMsg = messages.find((m) => m.role === 'system');
   if (sysMsg) {
     sysMsg.content =
       sysMsg.content +
-      `\n\n## Real-time System Status (captured just now)\n${snapshot}\n\nUse the data above to answer any questions about the user's system performance, memory, or CPU.`
+      `\n\n## Real-time System Status (captured just now)\n${snapshot}\n\nUse the data above to answer any questions about the user's system performance, memory, or CPU.`;
   }
-  console.log('[system-info] Injected system snapshot into system message')
+  console.log('[system-info] Injected system snapshot into system message');
 }
 
 function createToolExecutor(toolToMcp: Map<string, McpConnection>): ToolExecutor {
   return async (name, args) => {
     if (name === 'web_search') {
-      const query = args['query'] as string
-      return await executeWebSearch(query)
+      const query = args['query'] as string;
+      return await executeWebSearch(query);
     }
     if (name === 'get_system_info') {
-      return executeSystemInfo()
+      return executeSystemInfo();
     }
-    const mcpConn = toolToMcp.get(name)
+    const mcpConn = toolToMcp.get(name);
     if (mcpConn) {
-      return await callMcpTool(mcpConn, name, args)
+      return await callMcpTool(mcpConn, name, args);
     }
-    return `Unknown tool: ${name}`
-  }
+    return `Unknown tool: ${name}`;
+  };
 }
 
 function registerIpcHandlers(): void {
   // App info
-  ipcMain.handle('get-app-version', () => app.getVersion())
+  ipcMain.handle('get-app-version', () => app.getVersion());
   ipcMain.handle('get-system-info', () => ({
     platform: process.platform,
     arch: process.arch,
     nodeVersion: process.version
-  }))
+  }));
   ipcMain.handle('open-external-url', (_event, url: string) => {
     if (typeof url === 'string' && (url.startsWith('https://') || url.startsWith('http://'))) {
-      shell.openExternal(url)
+      shell.openExternal(url);
     }
-  })
+  });
   ipcMain.handle('get-system-memory', () => ({
     total: Math.round(os.totalmem() / 1024 / 1024),
     free: Math.round(os.freemem() / 1024 / 1024)
-  }))
+  }));
 
   // Settings
-  ipcMain.handle('settings:load', () => loadSettings())
+  ipcMain.handle('settings:load', () => loadSettings());
   ipcMain.handle('settings:save', (_event, settings: AppSettings) => {
-    saveSettings(settings)
-    return true
-  })
+    saveSettings(settings);
+    return true;
+  });
 
   // Sessions
-  ipcMain.handle('sessions:load', () => loadSessions())
+  ipcMain.handle('sessions:load', () => loadSessions());
   ipcMain.handle('sessions:save', (_event, data: SessionsData) => {
-    saveSessions(data)
-    return true
-  })
+    saveSessions(data);
+    return true;
+  });
 
   // MCP management
-  ipcMain.handle('mcp:load-builtin', () => BUILTIN_MCPS)
-  ipcMain.handle('mcp:load-user', () => loadMcpConfig())
+  ipcMain.handle('mcp:load-builtin', () => BUILTIN_MCPS);
+  ipcMain.handle('mcp:load-user', () => loadMcpConfig());
   ipcMain.handle('mcp:save-user', (_event, data: McpData) => {
-    saveMcpConfig(data)
-    return true
-  })
+    saveMcpConfig(data);
+    return true;
+  });
+
+  // Experts management
+  ipcMain.handle('experts:load', () => loadExperts());
+  ipcMain.handle('experts:save', (_event, data: ExpertsData) => {
+    saveExperts(data);
+    return true;
+  });
 
   // File operations
   ipcMain.handle('file:pick', (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    return win ? pickFile(win) : null
-  })
+    const win = BrowserWindow.fromWebContents(event.sender);
+    return win ? pickFile(win) : null;
+  });
   ipcMain.handle('file:pick-folder', (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    return win ? pickFolder(win) : null
-  })
-  ipcMain.handle('file:read', (_event, filePath: string) => readFileContent(filePath))
-  ipcMain.handle('file:list-dir', (_event, dirPath: string) => listDirectory(dirPath))
+    const win = BrowserWindow.fromWebContents(event.sender);
+    return win ? pickFolder(win) : null;
+  });
+  ipcMain.handle('file:read', (_event, filePath: string) => readFileContent(filePath));
+  ipcMain.handle('file:list-dir', (_event, dirPath: string) => listDirectory(dirPath));
   ipcMain.handle('file:write', (_event, filePath: string, content: string) => {
-    writeFileContent(filePath, content)
-    return true
-  })
+    writeFileContent(filePath, content);
+    return true;
+  });
 
   // LLM chat (streaming) with optional MCP tool support
   ipcMain.handle(
     'llm:chat',
     async (_event, messages: ChatMessage[], enabledMcpIds: string[] = []) => {
-      if (!mainWindow) return
-      const settings = loadSettings()
+      if (!mainWindow) return;
+      const settings = loadSettings();
       if (!settings.llm.apiKey) {
         mainWindow.webContents.send(
           'llm:error',
           'API Key not configured. Please set it in Settings.'
-        )
-        return
+        );
+        return;
       }
 
       // system-info：直接把快照注入 system message（确定性，不依赖模型决策）
-      injectSystemInfoIfEnabled(enabledMcpIds, messages)
+      injectSystemInfoIfEnabled(enabledMcpIds, messages);
 
       // web_search 等动态工具：走 tool calling（含内置 + 用户 MCP）
-      const { userServers } = loadMcpConfig()
+      const { userServers } = loadMcpConfig();
       const { tools, mcpConnections, toolToMcp } = await buildToolDefinitions(
         enabledMcpIds,
         userServers
-      )
-      const toolExecutor = createToolExecutor(toolToMcp)
+      );
+      const toolExecutor = createToolExecutor(toolToMcp);
 
-      console.log('[llm:chat] enabledMcpIds:', enabledMcpIds)
-      console.log('[llm:chat] tool-calling tools:', tools.map(t => t.function.name))
+      console.log('[llm:chat] enabledMcpIds:', enabledMcpIds);
+      console.log(
+        '[llm:chat] tool-calling tools:',
+        tools.map((t) => t.function.name)
+      );
 
       try {
-        await streamChat(settings.llm, messages, mainWindow, tools, toolExecutor)
+        await streamChat(settings.llm, messages, mainWindow, tools, toolExecutor);
       } finally {
         for (const conn of mcpConnections) {
           try {
-            await conn.client.close()
+            await conn.client.close();
           } catch (e) {
-            console.warn('[llm:chat] MCP close error:', conn.serverId, e)
+            console.warn('[llm:chat] MCP close error:', conn.serverId, e);
           }
         }
       }
     }
-  )
+  );
   ipcMain.handle('llm:abort', () => {
-    abortLLMStream()
-  })
+    abortLLMStream();
+  });
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.corwork.demo')
+  electronApp.setAppUserModelId('com.corwork.demo');
 
   app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
+    optimizer.watchWindowShortcuts(window);
+  });
 
-  registerIpcHandlers()
-  createWindow()
+  registerIpcHandlers();
+  createWindow();
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit()
+    app.quit();
   }
-})
+});

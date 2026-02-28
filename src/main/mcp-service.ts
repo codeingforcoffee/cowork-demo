@@ -1,22 +1,22 @@
-import { app } from 'electron'
-import fs from 'fs'
-import path from 'path'
-import os from 'os'
+import { app } from 'electron';
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
 
 export interface McpServer {
-  id: string
-  name: string
-  description: string
-  type: 'builtin' | 'stdio' | 'sse'
-  builtinId?: string
-  command?: string
-  args?: string[]
-  url?: string
-  config?: Record<string, string>
+  id: string;
+  name: string;
+  description: string;
+  type: 'builtin' | 'stdio' | 'sse';
+  builtinId?: string;
+  command?: string;
+  args?: string[];
+  url?: string;
+  config?: Record<string, string>;
 }
 
 export interface McpData {
-  userServers: McpServer[]
+  userServers: McpServer[];
 }
 
 export const BUILTIN_MCPS: McpServer[] = [
@@ -34,127 +34,126 @@ export const BUILTIN_MCPS: McpServer[] = [
     type: 'builtin',
     builtinId: 'system-info'
   }
-]
+];
 
 function getMcpPath(): string {
-  return path.join(app.getPath('userData'), 'mcp-config.json')
+  return path.join(app.getPath('userData'), 'mcp-config.json');
 }
 
 export function loadMcpConfig(): McpData {
   try {
-    const raw = fs.readFileSync(getMcpPath(), 'utf-8')
-    const data = JSON.parse(raw) as McpData
+    const raw = fs.readFileSync(getMcpPath(), 'utf-8');
+    const data = JSON.parse(raw) as McpData;
     return {
       userServers: Array.isArray(data.userServers) ? data.userServers : []
-    }
+    };
   } catch {
-    return { userServers: [] }
+    return { userServers: [] };
   }
 }
 
 export function saveMcpConfig(data: McpData): void {
-  const filePath = getMcpPath()
-  const dir = path.dirname(filePath)
+  const filePath = getMcpPath();
+  const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
+    fs.mkdirSync(dir, { recursive: true });
   }
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8')
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
 export async function executeWebSearch(query: string): Promise<string> {
   try {
-    const encodedQuery = encodeURIComponent(query)
-    const apiUrl = `https://api.duckduckgo.com/?q=${encodedQuery}&format=json&no_html=1&skip_disambig=1`
+    const encodedQuery = encodeURIComponent(query);
+    const apiUrl = `https://api.duckduckgo.com/?q=${encodedQuery}&format=json&no_html=1&skip_disambig=1`;
 
     const res = await fetch(apiUrl, {
       headers: { 'User-Agent': 'Corwork/0.1.0 (Desktop AI Assistant)' }
-    })
+    });
 
     if (!res.ok) {
-      return `Search failed: HTTP ${res.status}`
+      return `Search failed: HTTP ${res.status}`;
     }
 
     const data = (await res.json()) as {
-      Abstract?: string
-      AbstractText?: string
-      AbstractURL?: string
-      AbstractSource?: string
-      RelatedTopics?: { Text?: string; FirstURL?: string; Topics?: unknown[] }[]
-      Answer?: string
-      AnswerType?: string
-    }
+      Abstract?: string;
+      AbstractText?: string;
+      AbstractURL?: string;
+      AbstractSource?: string;
+      RelatedTopics?: { Text?: string; FirstURL?: string; Topics?: unknown[] }[];
+      Answer?: string;
+      AnswerType?: string;
+    };
 
-    const parts: string[] = []
+    const parts: string[] = [];
 
     if (data.Answer) {
-      parts.push(`**Direct Answer:** ${data.Answer}`)
+      parts.push(`**Direct Answer:** ${data.Answer}`);
     }
 
     if (data.AbstractText) {
-      parts.push(`**Summary:** ${data.AbstractText}`)
+      parts.push(`**Summary:** ${data.AbstractText}`);
       if (data.AbstractSource && data.AbstractURL) {
-        parts.push(`*Source: [${data.AbstractSource}](${data.AbstractURL})*`)
+        parts.push(`*Source: [${data.AbstractSource}](${data.AbstractURL})*`);
       }
     }
 
     if (data.RelatedTopics && data.RelatedTopics.length > 0) {
-      const topics = data.RelatedTopics
-        .filter(t => t.Text && !t.Topics)
+      const topics = data.RelatedTopics.filter((t) => t.Text && !t.Topics)
         .slice(0, 5)
-        .map(t => `- ${t.Text}${t.FirstURL ? ` (${t.FirstURL})` : ''}`)
+        .map((t) => `- ${t.Text}${t.FirstURL ? ` (${t.FirstURL})` : ''}`);
 
       if (topics.length > 0) {
-        parts.push(`**Related Results:**\n${topics.join('\n')}`)
+        parts.push(`**Related Results:**\n${topics.join('\n')}`);
       }
     }
 
     if (parts.length === 0) {
-      return `No direct results found for "${query}". This search engine is best for factual queries.`
+      return `No direct results found for "${query}". This search engine is best for factual queries.`;
     }
 
-    return parts.join('\n\n')
+    return parts.join('\n\n');
   } catch (err) {
-    return `Web search error: ${String(err)}`
+    return `Web search error: ${String(err)}`;
   }
 }
 
 export function executeSystemInfo(): string {
-  const toGB = (bytes: number): string => (bytes / 1024 / 1024 / 1024).toFixed(2)
-  const toMB = (bytes: number): number => Math.round(bytes / 1024 / 1024)
+  const toGB = (bytes: number): string => (bytes / 1024 / 1024 / 1024).toFixed(2);
+  const toMB = (bytes: number): number => Math.round(bytes / 1024 / 1024);
 
   // ── Memory ──
-  const totalMem = os.totalmem()
-  const freeMem = os.freemem()
-  const usedMem = totalMem - freeMem
-  const memPct = ((usedMem / totalMem) * 100).toFixed(1)
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const usedMem = totalMem - freeMem;
+  const memPct = ((usedMem / totalMem) * 100).toFixed(1);
 
   // ── CPU ──
-  const cpus = os.cpus()
-  const cpuModel = cpus[0]?.model.trim() ?? 'Unknown'
-  const cpuCores = cpus.length
+  const cpus = os.cpus();
+  const cpuModel = cpus[0]?.model.trim() ?? 'Unknown';
+  const cpuCores = cpus.length;
   // 每个核的 times: user/nice/sys/idle/irq
   const totalTimes = cpus.reduce(
     (acc, c) => {
-      acc.user += c.times.user
-      acc.nice += c.times.nice
-      acc.sys += c.times.sys
-      acc.idle += c.times.idle
-      acc.irq += c.times.irq
-      return acc
+      acc.user += c.times.user;
+      acc.nice += c.times.nice;
+      acc.sys += c.times.sys;
+      acc.idle += c.times.idle;
+      acc.irq += c.times.irq;
+      return acc;
     },
     { user: 0, nice: 0, sys: 0, idle: 0, irq: 0 }
-  )
-  const totalAll = Object.values(totalTimes).reduce((a, b) => a + b, 0)
-  const cpuUsagePct = (((totalAll - totalTimes.idle) / totalAll) * 100).toFixed(1)
-  const loadAvg = os.loadavg() // 1m / 5m / 15m（Windows 始终为 0）
+  );
+  const totalAll = Object.values(totalTimes).reduce((a, b) => a + b, 0);
+  const cpuUsagePct = (((totalAll - totalTimes.idle) / totalAll) * 100).toFixed(1);
+  const loadAvg = os.loadavg(); // 1m / 5m / 15m（Windows 始终为 0）
 
   // ── OS ──
-  const uptimeSec = os.uptime()
-  const uptimeH = Math.floor(uptimeSec / 3600)
-  const uptimeM = Math.floor((uptimeSec % 3600) / 60)
+  const uptimeSec = os.uptime();
+  const uptimeH = Math.floor(uptimeSec / 3600);
+  const uptimeM = Math.floor((uptimeSec % 3600) / 60);
 
   // ── App process memory ──
-  const proc = process.memoryUsage()
+  const proc = process.memoryUsage();
 
   const lines: string[] = [
     '### 内存',
@@ -180,7 +179,7 @@ export function executeSystemInfo(): string {
     `- Heap 已用：${toMB(proc.heapUsed)} MB`,
     `- Heap 总量：${toMB(proc.heapTotal)} MB`,
     `- 外部 C++ 对象：${toMB(proc.external)} MB`
-  ]
+  ];
 
-  return lines.join('\n')
+  return lines.join('\n');
 }

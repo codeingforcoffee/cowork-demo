@@ -1,5 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
+import { contextBridge, ipcRenderer } from 'electron';
+import { electronAPI } from '@electron-toolkit/preload';
 
 const api = {
   // Settings
@@ -16,12 +16,14 @@ const api = {
   loadUserMcps: (): Promise<unknown> => ipcRenderer.invoke('mcp:load-user'),
   saveUserMcps: (data: unknown): Promise<boolean> => ipcRenderer.invoke('mcp:save-user', data),
 
+  // Experts
+  loadExperts: (): Promise<unknown> => ipcRenderer.invoke('experts:load'),
+  saveExperts: (data: unknown): Promise<boolean> => ipcRenderer.invoke('experts:save', data),
+
   // File operations
   pickFile: (): Promise<string | null> => ipcRenderer.invoke('file:pick'),
   pickFolder: (): Promise<string | null> => ipcRenderer.invoke('file:pick-folder'),
-  readFile: (
-    path: string
-  ): Promise<{ content: string; name: string; size: number }> =>
+  readFile: (path: string): Promise<{ content: string; name: string; size: number }> =>
     ipcRenderer.invoke('file:read', path),
   listDir: (
     path: string
@@ -39,19 +41,19 @@ const api = {
 
   // LLM event listeners
   onLLMChunk: (callback: (chunk: string) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, chunk: string): void => callback(chunk)
-    ipcRenderer.on('llm:chunk', handler)
-    return () => ipcRenderer.removeListener('llm:chunk', handler)
+    const handler = (_event: Electron.IpcRendererEvent, chunk: string): void => callback(chunk);
+    ipcRenderer.on('llm:chunk', handler);
+    return () => ipcRenderer.removeListener('llm:chunk', handler);
   },
   onLLMDone: (callback: () => void) => {
-    const handler = (): void => callback()
-    ipcRenderer.on('llm:done', handler)
-    return () => ipcRenderer.removeListener('llm:done', handler)
+    const handler = (): void => callback();
+    ipcRenderer.on('llm:done', handler);
+    return () => ipcRenderer.removeListener('llm:done', handler);
   },
   onLLMError: (callback: (error: string) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, error: string): void => callback(error)
-    ipcRenderer.on('llm:error', handler)
-    return () => ipcRenderer.removeListener('llm:error', handler)
+    const handler = (_event: Electron.IpcRendererEvent, error: string): void => callback(error);
+    ipcRenderer.on('llm:error', handler);
+    return () => ipcRenderer.removeListener('llm:error', handler);
   },
   onLLMToolCall: (
     callback: (info: { id: string; name: string; args: Record<string, unknown> }) => void
@@ -59,32 +61,30 @@ const api = {
     const handler = (
       _event: Electron.IpcRendererEvent,
       info: { id: string; name: string; args: Record<string, unknown> }
-    ): void => callback(info)
-    ipcRenderer.on('llm:tool-call', handler)
-    return () => ipcRenderer.removeListener('llm:tool-call', handler)
+    ): void => callback(info);
+    ipcRenderer.on('llm:tool-call', handler);
+    return () => ipcRenderer.removeListener('llm:tool-call', handler);
   },
-  onLLMToolResult: (
-    callback: (info: { id: string; name: string; result: string }) => void
-  ) => {
+  onLLMToolResult: (callback: (info: { id: string; name: string; result: string }) => void) => {
     const handler = (
       _event: Electron.IpcRendererEvent,
       info: { id: string; name: string; result: string }
-    ): void => callback(info)
-    ipcRenderer.on('llm:tool-result', handler)
-    return () => ipcRenderer.removeListener('llm:tool-result', handler)
+    ): void => callback(info);
+    ipcRenderer.on('llm:tool-result', handler);
+    return () => ipcRenderer.removeListener('llm:tool-result', handler);
   }
-}
+};
 
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld('electron', electronAPI);
+    contextBridge.exposeInMainWorld('api', api);
   } catch (error) {
-    console.error(error)
+    console.error(error);
   }
 } else {
   // @ts-ignore (define in dts)
-  window.electron = electronAPI
+  window.electron = electronAPI;
   // @ts-ignore (define in dts)
-  window.api = api
+  window.api = api;
 }

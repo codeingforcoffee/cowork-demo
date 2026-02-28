@@ -1,27 +1,25 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import Sidebar from './components/Sidebar.vue'
-import { useThemeStore } from './stores/theme'
-import { useSessionsStore } from './stores/sessions'
-import { useMcpStore } from './stores/mcp'
+import { ref, onMounted } from 'vue';
+import Sidebar from './components/Sidebar.vue';
+import { useThemeStore } from './stores/theme';
+import { useSessionsStore } from './stores/sessions';
+import { useMcpStore } from './stores/mcp';
 
-useThemeStore()
+useThemeStore();
 
-const sessionsStore = useSessionsStore()
-const mcpStore = useMcpStore()
+const sessionsStore = useSessionsStore();
+const mcpStore = useMcpStore();
 
-const sidebarCollapsed = ref(
-  localStorage.getItem('corwork.sidebarCollapsed') === 'true'
-)
+const sidebarCollapsed = ref(localStorage.getItem('corwork.sidebarCollapsed') === 'true');
 
 function toggleSidebar(): void {
-  sidebarCollapsed.value = !sidebarCollapsed.value
-  localStorage.setItem('corwork.sidebarCollapsed', String(sidebarCollapsed.value))
+  sidebarCollapsed.value = !sidebarCollapsed.value;
+  localStorage.setItem('corwork.sidebarCollapsed', String(sidebarCollapsed.value));
 }
 
 onMounted(async () => {
-  await Promise.all([sessionsStore.init(), mcpStore.init()])
-})
+  await Promise.all([sessionsStore.init(), mcpStore.init()]);
+});
 </script>
 
 <template>

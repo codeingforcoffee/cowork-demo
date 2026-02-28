@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted } from 'vue';
 
-const appVersion = ref('...')
-const systemInfo = ref<{ platform: string; arch: string; nodeVersion: string } | null>(null)
+const appVersion = ref('...');
+const systemInfo = ref<{ platform: string; arch: string; nodeVersion: string } | null>(null);
 
 onMounted(async () => {
   try {
-    appVersion.value = await window.electron.ipcRenderer.invoke('get-app-version')
-    systemInfo.value = await window.electron.ipcRenderer.invoke('get-system-info')
+    appVersion.value = await window.electron.ipcRenderer.invoke('get-app-version');
+    systemInfo.value = await window.electron.ipcRenderer.invoke('get-system-info');
   } catch {
-    appVersion.value = 'N/A'
+    appVersion.value = 'N/A';
   }
-})
+});
 
 function openExternal(url: string): void {
-  window.electron.ipcRenderer.invoke('open-external-url', url)
+  window.electron.ipcRenderer.invoke('open-external-url', url);
 }
 </script>
 

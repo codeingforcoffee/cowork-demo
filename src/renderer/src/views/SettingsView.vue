@@ -1,32 +1,32 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import ThemeSwitch from '../components/ThemeSwitch.vue'
-import { useSettingsStore } from '../stores/settings'
-import { setLocale, type Locale } from '../i18n'
+import { ref, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
+import ThemeSwitch from '../components/ThemeSwitch.vue';
+import { useSettingsStore } from '../stores/settings';
+import { setLocale, type Locale } from '../i18n';
 
-const { t, locale } = useI18n()
-const settingsStore = useSettingsStore()
-const saving = ref(false)
+const { t, locale } = useI18n();
+const settingsStore = useSettingsStore();
+const saving = ref(false);
 
 function onLocaleChange(newLocale: Locale): void {
-  setLocale(newLocale)
+  setLocale(newLocale);
 }
-const saved = ref(false)
+const saved = ref(false);
 
 onMounted(async () => {
-  await settingsStore.load()
-})
+  await settingsStore.load();
+});
 
 async function saveLLM(): Promise<void> {
-  saving.value = true
-  saved.value = false
+  saving.value = true;
+  saved.value = false;
   try {
-    await settingsStore.save()
-    saved.value = true
-    setTimeout(() => (saved.value = false), 2000)
+    await settingsStore.save();
+    saved.value = true;
+    setTimeout(() => (saved.value = false), 2000);
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 </script>
@@ -44,7 +44,9 @@ async function saveLLM(): Promise<void> {
         </p>
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-text-primary mb-1">{{ t('settings.baseUrl') }}</label>
+            <label class="block text-sm font-medium text-text-primary mb-1">{{
+              t('settings.baseUrl')
+            }}</label>
             <input
               v-model="settingsStore.llm.baseUrl"
               type="text"
@@ -56,7 +58,9 @@ async function saveLLM(): Promise<void> {
             </p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-text-primary mb-1">{{ t('settings.apiKey') }}</label>
+            <label class="block text-sm font-medium text-text-primary mb-1">{{
+              t('settings.apiKey')
+            }}</label>
             <input
               v-model="settingsStore.llm.apiKey"
               type="password"
@@ -67,7 +71,9 @@ async function saveLLM(): Promise<void> {
             <p class="mt-1 text-xs text-text-tertiary">{{ t('settings.apiKeyHint') }}</p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-text-primary mb-1">{{ t('settings.model') }}</label>
+            <label class="block text-sm font-medium text-text-primary mb-1">{{
+              t('settings.model')
+            }}</label>
             <input
               v-model="settingsStore.llm.model"
               type="text"
@@ -86,7 +92,9 @@ async function saveLLM(): Promise<void> {
             >
               {{ saving ? t('common.saving') : t('common.save') }}
             </button>
-            <span v-if="saved" class="text-sm text-green-600 dark:text-green-400">{{ t('common.saved') }}</span>
+            <span v-if="saved" class="text-sm text-green-600 dark:text-green-400">{{
+              t('common.saved')
+            }}</span>
           </div>
         </div>
       </section>
